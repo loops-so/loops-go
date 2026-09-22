@@ -30,6 +30,9 @@ func main() {
         EventProperties: map[string]any{
             "plan": "pro",
         },
+        ContactProperties: map[string]any{
+            "planName": "Pro",
+        },
     })
     if err != nil {
         log.Fatal(err)

@@ -222,8 +222,9 @@ func (c *Client) UpdateContact(req UpdateContactRequest) error {
 	return nil
 }
 
-// DeleteContact deletes a contact identified by email or user ID. One of the
-// two must be non-empty.
+// DeleteContact deletes a contact identified by email or user ID. Set exactly
+// one of the two. Only the non-empty identifier is sent; the API rejects a
+// request that provides both or neither.
 func (c *Client) DeleteContact(email, userID string) error {
 	body := make(map[string]any)
 	if email != "" {
