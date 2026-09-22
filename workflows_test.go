@@ -423,7 +423,8 @@ func TestGetWorkflowNode_AudienceFilter(t *testing.T) {
 				{"type": "property", "key": "plan", "operator": "equals", "value": "pro"}
 			]
 		},
-		"audienceSegmentId": "seg_abc"
+		"audienceSegmentId": "seg_abc",
+		"appliesDownstream": true
 	}`
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -451,6 +452,30 @@ func TestGetWorkflowNode_AudienceFilter(t *testing.T) {
 	}
 	if af.Conditions[0].Property == nil || af.Conditions[0].Property.Key != "plan" {
 		t.Errorf("audienceFilter.Conditions[0] = %+v", af.Conditions[0])
+	}
+	if !node.AudienceFilter.AppliesDownstream {
+		t.Error("AppliesDownstream = false, want true")
+	}
+	raw, err := json.Marshal(node)
+	if err != nil {
+		t.Fatalf("Marshal: %v", err)
+	}
+	if !strings.Contains(string(raw), `"appliesDownstream":true`) {
+		t.Errorf("marshal dropped appliesDownstream: %s", raw)
+	}
+}
+
+func TestAudienceFilterWorkflowNode_MarshalKeepsFalseAppliesDownstream(t *testing.T) {
+	n := WorkflowNode{
+		TypeName:       WorkflowNodeTypeAudienceFilter,
+		AudienceFilter: &AudienceFilterWorkflowNode{ID: "n7", WorkflowID: "wf_1", NextNodeIDs: []string{"n9"}},
+	}
+	raw, err := json.Marshal(n)
+	if err != nil {
+		t.Fatalf("Marshal: %v", err)
+	}
+	if !strings.Contains(string(raw), `"appliesDownstream":false`) {
+		t.Errorf("marshal dropped appliesDownstream: %s", raw)
 	}
 }
 

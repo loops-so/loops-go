@@ -466,6 +466,7 @@ type AudienceFilterWorkflowNode struct {
 	NextNodeIDs       []string        `json:"nextNodeIds"`
 	AudienceFilter    *AudienceFilter `json:"audienceFilter,omitempty"`
 	AudienceSegmentID string          `json:"audienceSegmentId,omitempty"`
+	AppliesDownstream bool            `json:"appliesDownstream"`
 }
 
 // TimerActionWorkflowNode is the TimerAction variant of [WorkflowNode].
