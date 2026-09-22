@@ -10,7 +10,7 @@ import "runtime/debug"
 var Version = readVersion()
 
 // SpecVersion is the Loops OpenAPI spec version this SDK is built against.
-const SpecVersion = "1.21.9"
+const SpecVersion = "1.21.14"
 
 const modulePath = "github.com/loops-so/loops-go"
 

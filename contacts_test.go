@@ -219,6 +219,9 @@ func TestDeleteContact(t *testing.T) {
 						t.Errorf("body[%q] = %v, want %v", k, gotBody[k], v)
 					}
 				}
+				if len(gotBody) != len(tt.wantBody) {
+					t.Errorf("body = %v, want only %v", gotBody, tt.wantBody)
+				}
 			}
 
 			if tt.wantAPIErr != nil {

@@ -1325,32 +1325,53 @@ func TestDeleteWorkflow_Confirmed(t *testing.T) {
 }
 
 func TestDeleteWorkflow_ConfirmationRequired(t *testing.T) {
-	const message = "This workflow is currently sending and has 3 queued contacts. Deleting it will stop sending it and cancel those queued contacts. Confirm deletion by sending a second request with confirmDelete: true."
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusConflict)
-		w.Write([]byte(`{"message":` + strconv.Quote(message) + `}`))
-	}))
-	defer server.Close()
+	tests := []struct {
+		name    string
+		message string
+	}{
+		{
+			name:    "sending",
+			message: "This workflow is currently sending. Deleting it will stop sending it. Confirm deletion by sending a second request with confirmDelete: true.",
+		},
+		{
+			name:    "queued contacts",
+			message: "This workflow has 3 queued contacts. Deleting it will cancel those queued contacts. Confirm deletion by sending a second request with confirmDelete: true.",
+		},
+		{
+			name:    "sending and queued contacts",
+			message: "This workflow is currently sending and has 3 queued contacts. Deleting it will stop sending it and cancel those queued contacts. Confirm deletion by sending a second request with confirmDelete: true.",
+		},
+	}
 
-	client := NewClient("test-key", WithBaseURL(server.URL))
-	err := client.DeleteWorkflow("wf_1", DeleteWorkflowRequest{ExpectedRevisionID: ptr("rev_1")})
-	if !errors.Is(err, ErrWorkflowDeleteConfirmationRequired) {
-		t.Fatalf("expected ErrWorkflowDeleteConfirmationRequired, got %v", err)
-	}
-	var apiErr *APIError
-	if !errors.As(err, &apiErr) {
-		t.Fatalf("expected a wrapped *APIError, got %T: %v", err, err)
-	}
-	if apiErr.StatusCode != http.StatusConflict {
-		t.Errorf("StatusCode = %d, want 409", apiErr.StatusCode)
-	}
-	if apiErr.Message != message {
-		t.Errorf("Message = %q", apiErr.Message)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusConflict)
+				w.Write([]byte(`{"message":` + strconv.Quote(tt.message) + `}`))
+			}))
+			defer server.Close()
+
+			client := NewClient("test-key", WithBaseURL(server.URL))
+			err := client.DeleteWorkflow("wf_1", DeleteWorkflowRequest{ExpectedRevisionID: ptr("rev_1")})
+			if !errors.Is(err, ErrWorkflowDeleteConfirmationRequired) {
+				t.Fatalf("expected ErrWorkflowDeleteConfirmationRequired, got %v", err)
+			}
+			var apiErr *APIError
+			if !errors.As(err, &apiErr) {
+				t.Fatalf("expected a wrapped *APIError, got %T: %v", err, err)
+			}
+			if apiErr.StatusCode != http.StatusConflict {
+				t.Errorf("StatusCode = %d, want 409", apiErr.StatusCode)
+			}
+			if apiErr.Message != tt.message {
+				t.Errorf("Message = %q", apiErr.Message)
+			}
+		})
 	}
 }
 
 func TestDeleteWorkflow_StaleRevision409(t *testing.T) {
-	const message = "workflowRevisionId mismatch. Latest workflowRevisionId is rev_2. Refetch and retry."
+	const message = "workflowRevisionId mismatch. Latest workflowRevisionId is clx7a3b5c7d9e1f3g5h7i9j1. Refetch and retry."
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusConflict)
 		w.Write([]byte(`{"message":` + strconv.Quote(message) + `}`))

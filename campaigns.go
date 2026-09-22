@@ -69,6 +69,9 @@ type LmxWarning struct {
 // EmailMessageFields holds the editable fields of an email message. It is
 // embedded in [UpdateEmailMessageRequest]; the request's Set map determines
 // which fields are actually written.
+//
+// CCEmail and BCCEmail require CC/BCC to be enabled for the team and are not
+// supported for campaign emails.
 type EmailMessageFields struct {
 	Subject                    string             `json:"subject,omitempty"`
 	PreviewText                string             `json:"previewText,omitempty"`
