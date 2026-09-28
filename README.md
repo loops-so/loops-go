@@ -60,15 +60,15 @@ client := loops.NewClient("YOUR_API_KEY",
 - Audience segments — `GetAudienceSegment`, `ListAudienceSegments`, `CreateAudienceSegment`
 - Events — `SendEvent`
 - Event patterns — `ListEventPatterns`, `GetEventPatternByName`, `GetEventPattern`
-- Transactional — `SendTransactional`, `ListTransactionals`, `CreateTransactional`, `GetTransactional`, `UpdateTransactional`, `EnsureTransactionalDraft`, `PublishTransactional`
+- Transactional — `SendTransactional`, `ListTransactionals`, `CreateTransactional`, `GetTransactional`, `UpdateTransactional`, `EnsureTransactionalDraft`, `PublishTransactional`, `GetTransactionalMetrics`
 - Transactional groups — `CreateTransactionalGroup`, `GetTransactionalGroup`, `UpdateTransactionalGroup`, `ListTransactionalGroups`
 - Email messages — `GetEmailMessage`, `UpdateEmailMessage`, `PreviewEmailMessage`, `GetEmailMessageGuardian`
-- Campaigns — `CreateCampaign`, `UpdateCampaign`, `GetCampaign`, `ListCampaigns`
+- Campaigns — `CreateCampaign`, `UpdateCampaign`, `GetCampaign`, `ListCampaigns`, `GetCampaignMetrics`
 - Campaign groups — `CreateCampaignGroup`, `GetCampaignGroup`, `UpdateCampaignGroup`, `ListCampaignGroups`
 - Components — `GetComponent`, `ListComponents`, `CreateComponent`, `UpdateComponent`
 - Themes — `GetTheme`, `ListThemes`, `CreateTheme`, `UpdateTheme`
 - Uploads — `Upload`, `CreateUpload`, `CompleteUpload`
-- Workflows — `ListWorkflows`, `GetWorkflow`, `GetWorkflowNode`, `CreateWorkflow`, `UpdateWorkflow`, `DeleteWorkflow`, `ChangeWorkflowMailingList`, `CreateWorkflowNode`, `UpdateWorkflowNode`, `AddWorkflowBranch`, `RerouteNodeConnection`, `DeleteWorkflowNode`, `DeleteWorkflowNodeRecursive`
+- Workflows — `ListWorkflows`, `GetWorkflow`, `GetWorkflowNode`, `CreateWorkflow`, `UpdateWorkflow`, `DeleteWorkflow`, `ChangeWorkflowMailingList`, `CreateWorkflowNode`, `UpdateWorkflowNode`, `AddWorkflowBranch`, `RerouteNodeConnection`, `DeleteWorkflowNode`, `DeleteWorkflowNodeRecursive`, `GetWorkflowNodeMetrics`
 
 Full reference: [pkg.go.dev/github.com/loops-so/loops-go](https://pkg.go.dev/github.com/loops-so/loops-go).
 
