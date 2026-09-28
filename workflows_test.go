@@ -1689,12 +1689,12 @@ func TestGetWorkflowNodeMetrics(t *testing.T) {
 			wantAPIErr: &APIError{StatusCode: http.StatusNotFound, Message: "Workflow not found."},
 		},
 		{
-			name:       "not a SendEmailAction node",
+			name:       "invalid ids",
 			workflowID: "wf_1",
-			nodeID:     "node_timer",
+			nodeID:     "bad",
 			statusCode: http.StatusBadRequest,
-			body:       `{"message":"Node is not a SendEmailAction node."}`,
-			wantAPIErr: &APIError{StatusCode: http.StatusBadRequest, Message: "Node is not a SendEmailAction node."},
+			body:       `{"message":"Invalid workflowId or nodeId"}`,
+			wantAPIErr: &APIError{StatusCode: http.StatusBadRequest, Message: "Invalid workflowId or nodeId"},
 		},
 		{
 			name:       "invalid json",

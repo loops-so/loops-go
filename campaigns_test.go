@@ -716,11 +716,11 @@ func TestGetCampaignMetrics(t *testing.T) {
 			wantAPIErr: &APIError{StatusCode: http.StatusNotFound, Message: "Campaign not found."},
 		},
 		{
-			name:       "not sent",
-			id:         "cmp_draft",
+			name:       "invalid id",
+			id:         "bad",
 			statusCode: http.StatusBadRequest,
-			body:       `{"message":"Campaign has not been sent."}`,
-			wantAPIErr: &APIError{StatusCode: http.StatusBadRequest, Message: "Campaign has not been sent."},
+			body:       `{"message":"Invalid campaignId"}`,
+			wantAPIErr: &APIError{StatusCode: http.StatusBadRequest, Message: "Invalid campaignId"},
 		},
 		{
 			name:       "invalid json",
