@@ -1644,3 +1644,118 @@ func TestMarshalDiscriminated_TypedNilVariantErrors(t *testing.T) {
 		t.Fatal("expected error marshaling a node with a nil variant, got none")
 	}
 }
+
+func TestGetWorkflowNodeMetrics(t *testing.T) {
+	tests := []struct {
+		name       string
+		workflowID string
+		nodeID     string
+		statusCode int
+		body       string
+		want       EmailMetrics
+		wantAPIErr *APIError
+		wantErrMsg string
+	}{
+		{
+			name:       "success",
+			workflowID: "wf_1",
+			nodeID:     "node_s",
+			statusCode: http.StatusOK,
+			body:       `{"sends":4210,"opens":1922,"clicks":301,"unsubscribes":12,"spamReports":1,"hardBounces":9,"softBounces":13}`,
+			want: EmailMetrics{
+				Sends:        4210,
+				Opens:        1922,
+				Clicks:       301,
+				Unsubscribes: 12,
+				SpamReports:  1,
+				HardBounces:  9,
+				SoftBounces:  13,
+			},
+		},
+		{
+			name:       "never sent reports zero counters",
+			workflowID: "wf_1",
+			nodeID:     "node_new",
+			statusCode: http.StatusOK,
+			body:       `{"sends":0,"opens":0,"clicks":0,"unsubscribes":0,"spamReports":0,"hardBounces":0,"softBounces":0}`,
+			want:       EmailMetrics{},
+		},
+		{
+			name:       "not found",
+			workflowID: "wf_missing",
+			nodeID:     "node_s",
+			statusCode: http.StatusNotFound,
+			body:       `{"message":"Workflow not found."}`,
+			wantAPIErr: &APIError{StatusCode: http.StatusNotFound, Message: "Workflow not found."},
+		},
+		{
+			name:       "not a SendEmailAction node",
+			workflowID: "wf_1",
+			nodeID:     "node_timer",
+			statusCode: http.StatusBadRequest,
+			body:       `{"message":"Node is not a SendEmailAction node."}`,
+			wantAPIErr: &APIError{StatusCode: http.StatusBadRequest, Message: "Node is not a SendEmailAction node."},
+		},
+		{
+			name:       "invalid json",
+			workflowID: "wf_1",
+			nodeID:     "node_s",
+			statusCode: http.StatusOK,
+			body:       `not json`,
+			wantErrMsg: "failed to decode response",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var gotMethod, gotPath string
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				gotMethod = r.Method
+				gotPath = r.URL.Path
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.body))
+			}))
+			defer server.Close()
+
+			client := NewClient("test-key", WithBaseURL(server.URL))
+			result, err := client.GetWorkflowNodeMetrics(tt.workflowID, tt.nodeID)
+
+			if tt.wantAPIErr != nil {
+				var apiErr *APIError
+				if !errors.As(err, &apiErr) {
+					t.Fatalf("expected *APIError, got %T: %v", err, err)
+				}
+				if apiErr.StatusCode != tt.wantAPIErr.StatusCode {
+					t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, tt.wantAPIErr.StatusCode)
+				}
+				if apiErr.Message != tt.wantAPIErr.Message {
+					t.Errorf("Message = %q, want %q", apiErr.Message, tt.wantAPIErr.Message)
+				}
+				return
+			}
+
+			if tt.wantErrMsg != "" {
+				if err == nil {
+					t.Fatalf("expected error containing %q, got nil", tt.wantErrMsg)
+				}
+				if !strings.Contains(err.Error(), tt.wantErrMsg) {
+					t.Errorf("error = %q, want it to contain %q", err.Error(), tt.wantErrMsg)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if gotMethod != http.MethodGet {
+				t.Errorf("method = %q, want GET", gotMethod)
+			}
+			if wantPath := "/workflows/" + tt.workflowID + "/nodes/" + tt.nodeID + "/metrics"; gotPath != wantPath {
+				t.Errorf("path = %q, want %q", gotPath, wantPath)
+			}
+			if *result != tt.want {
+				t.Errorf("metrics = %+v, want %+v", *result, tt.want)
+			}
+		})
+	}
+}

@@ -825,6 +825,35 @@ func (c *Client) GetWorkflowNode(workflowID, nodeID string) (*WorkflowNodeWithRe
 	return &result, nil
 }
 
+// GetWorkflowNodeMetrics returns all-time email engagement metrics for the
+// SendEmailAction node identified by nodeID in the workflow identified by
+// workflowID. The server responds with a 400 error for nodes of any other
+// type or for a node with no email message. A SendEmailAction node that has
+// not sent anything yet reports every counter as 0.
+func (c *Client) GetWorkflowNodeMetrics(workflowID, nodeID string) (*EmailMetrics, error) {
+	req, err := c.newRequest(http.MethodGet, "/workflows/"+workflowID+"/nodes/"+nodeID+"/metrics", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errorFromResponse(resp)
+	}
+
+	var result EmailMetrics
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &result, nil
+}
+
 // WorkflowMutationNode is the detailed node returned by workflow mutations
 // (create, update, add-branch). Unlike [WorkflowNode] it omits workflowId and
 // its variant fields differ. Exactly one variant pointer is set; TypeName is
