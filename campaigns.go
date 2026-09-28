@@ -276,3 +276,44 @@ func (c *Client) ListCampaigns(params PaginationParams) ([]Campaign, *Pagination
 
 	return result.Data, &result.Pagination, nil
 }
+
+// EmailMetrics holds all-time email engagement counters, as returned by
+// [Client.GetCampaignMetrics] and [Client.GetWorkflowNodeMetrics]. Opens and
+// Clicks count sends, not events: a send opened five times counts once. A
+// recipient who received the email twice is counted once per send.
+type EmailMetrics struct {
+	Sends        int `json:"sends"`
+	Opens        int `json:"opens"`
+	Clicks       int `json:"clicks"`
+	Unsubscribes int `json:"unsubscribes"`
+	SpamReports  int `json:"spamReports"`
+	HardBounces  int `json:"hardBounces"`
+	SoftBounces  int `json:"softBounces"`
+}
+
+// GetCampaignMetrics returns all-time email engagement metrics for the
+// campaign identified by id. The server responds with a 400 error when the
+// campaign has not been sent yet or has no email message.
+func (c *Client) GetCampaignMetrics(id string) (*EmailMetrics, error) {
+	req, err := c.newRequest(http.MethodGet, "/campaigns/"+id+"/metrics", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errorFromResponse(resp)
+	}
+
+	var result EmailMetrics
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &result, nil
+}
