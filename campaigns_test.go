@@ -682,3 +682,105 @@ func TestUpdateCampaign_NullableFields(t *testing.T) {
 		t.Errorf("name should not be sent, got %v", body["name"])
 	}
 }
+
+func TestGetCampaignMetrics(t *testing.T) {
+	want := EmailMetrics{
+		Sends:        4210,
+		Opens:        1922,
+		Clicks:       301,
+		Unsubscribes: 12,
+		SpamReports:  1,
+		HardBounces:  9,
+		SoftBounces:  13,
+	}
+
+	tests := []struct {
+		name       string
+		id         string
+		statusCode int
+		body       string
+		wantAPIErr *APIError
+		wantErrMsg string
+	}{
+		{
+			name:       "success",
+			id:         "cmp_abc123",
+			statusCode: http.StatusOK,
+			body:       `{"sends":4210,"opens":1922,"clicks":301,"unsubscribes":12,"spamReports":1,"hardBounces":9,"softBounces":13}`,
+		},
+		{
+			name:       "not found",
+			id:         "cmp_missing",
+			statusCode: http.StatusNotFound,
+			body:       `{"message":"Campaign not found."}`,
+			wantAPIErr: &APIError{StatusCode: http.StatusNotFound, Message: "Campaign not found."},
+		},
+		{
+			name:       "invalid id",
+			id:         "bad",
+			statusCode: http.StatusBadRequest,
+			body:       `{"message":"Invalid campaignId"}`,
+			wantAPIErr: &APIError{StatusCode: http.StatusBadRequest, Message: "Invalid campaignId"},
+		},
+		{
+			name:       "invalid json",
+			id:         "cmp_abc123",
+			statusCode: http.StatusOK,
+			body:       `not json`,
+			wantErrMsg: "failed to decode response",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var gotMethod, gotPath string
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				gotMethod = r.Method
+				gotPath = r.URL.Path
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.body))
+			}))
+			defer server.Close()
+
+			client := NewClient("test-key", WithBaseURL(server.URL))
+			result, err := client.GetCampaignMetrics(tt.id)
+
+			if tt.wantAPIErr != nil {
+				var apiErr *APIError
+				if !errors.As(err, &apiErr) {
+					t.Fatalf("expected *APIError, got %T: %v", err, err)
+				}
+				if apiErr.StatusCode != tt.wantAPIErr.StatusCode {
+					t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, tt.wantAPIErr.StatusCode)
+				}
+				if apiErr.Message != tt.wantAPIErr.Message {
+					t.Errorf("Message = %q, want %q", apiErr.Message, tt.wantAPIErr.Message)
+				}
+				return
+			}
+
+			if tt.wantErrMsg != "" {
+				if err == nil {
+					t.Fatalf("expected error containing %q, got nil", tt.wantErrMsg)
+				}
+				if !strings.Contains(err.Error(), tt.wantErrMsg) {
+					t.Errorf("error = %q, want it to contain %q", err.Error(), tt.wantErrMsg)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if gotMethod != http.MethodGet {
+				t.Errorf("method = %q, want GET", gotMethod)
+			}
+			if wantPath := "/campaigns/" + tt.id + "/metrics"; gotPath != wantPath {
+				t.Errorf("path = %q, want %q", gotPath, wantPath)
+			}
+			if *result != want {
+				t.Errorf("metrics = %+v, want %+v", *result, want)
+			}
+		})
+	}
+}

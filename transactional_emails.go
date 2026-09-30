@@ -233,3 +233,40 @@ func (c *Client) ListTransactionals(params PaginationParams) ([]Transactional, *
 
 	return result.Data, &result.Pagination, nil
 }
+
+// TransactionalMetrics holds all-time delivery counters for a transactional
+// email, as returned by [Client.GetTransactionalMetrics]. Counters are
+// totalled across every published version of the email.
+type TransactionalMetrics struct {
+	Sends       int `json:"sends"`
+	Deliveries  int `json:"deliveries"`
+	SpamReports int `json:"spamReports"`
+	HardBounces int `json:"hardBounces"`
+	SoftBounces int `json:"softBounces"`
+}
+
+// GetTransactionalMetrics returns all-time delivery metrics for the
+// transactional email identified by id.
+func (c *Client) GetTransactionalMetrics(id string) (*TransactionalMetrics, error) {
+	req, err := c.newRequest(http.MethodGet, "/transactional-emails/"+id+"/metrics", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errorFromResponse(resp)
+	}
+
+	var result TransactionalMetrics
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &result, nil
+}
