@@ -183,6 +183,7 @@ type UpdateContactRequest struct {
 	UserID            string
 	FirstName         string
 	LastName          string
+	Source            string
 	Subscribed        *bool
 	UserGroup         string
 	MailingLists      map[string]bool
@@ -197,6 +198,9 @@ func (c *Client) UpdateContact(req UpdateContactRequest) error {
 	}
 	if req.UserID != "" {
 		body["userId"] = req.UserID
+	}
+	if req.Source != "" {
+		body["source"] = req.Source
 	}
 
 	b, err := json.Marshal(body)
