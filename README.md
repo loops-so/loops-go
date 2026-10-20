@@ -1,6 +1,6 @@
 # loops-go
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/loops-so/loops-go.svg)](https://pkg.go.dev/github.com/loops-so/loops-go)
+[![Go Reference](https://pkg.go.dev/badge/github.com/loops-so/loops-go.svg)](https://pkg.go.dev/github.com/loops-so/loops-go) [![test](https://github.com/loops-so/loops-go/actions/workflows/test.yml/badge.svg)](https://github.com/loops-so/loops-go/actions/workflows/test.yml) [![vuln](https://github.com/loops-so/loops-go/actions/workflows/vuln.yml/badge.svg)](https://github.com/loops-so/loops-go/actions/workflows/vuln.yml)
 
 Go SDK for the [Loops](https://loops.so) API.
 
