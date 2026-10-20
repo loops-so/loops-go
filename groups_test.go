@@ -46,24 +46,28 @@ const listGroupsResponseBody = `{
 }`
 
 type groupOps struct {
-	name      string
-	basePath  string
-	create    func(c *Client, req CreateGroupRequest) (*Group, error)
-	get       func(c *Client, id string) (*Group, error)
-	update    func(c *Client, id string, req UpdateGroupRequest) (*Group, error)
-	list      func(c *Client, params PaginationParams) ([]Group, *Pagination, error)
-	createOK  int
+	name     string
+	basePath string
+	create   func(c *Client, req CreateGroupRequest) (*Group, error)
+	get      func(c *Client, id string) (*Group, error)
+	update   func(c *Client, id string, req UpdateGroupRequest) (*Group, error)
+	list     func(c *Client, params PaginationParams) ([]Group, *Pagination, error)
+	createOK int
 }
 
-func bothGroupOps() []groupOps {
+func allGroupOps() []groupOps {
 	return []groupOps{
 		{
 			name:     "campaign",
 			basePath: "/campaign-groups",
 			create:   func(c *Client, req CreateGroupRequest) (*Group, error) { return c.CreateCampaignGroup(req) },
 			get:      func(c *Client, id string) (*Group, error) { return c.GetCampaignGroup(id) },
-			update:   func(c *Client, id string, req UpdateGroupRequest) (*Group, error) { return c.UpdateCampaignGroup(id, req) },
-			list:     func(c *Client, params PaginationParams) ([]Group, *Pagination, error) { return c.ListCampaignGroups(params) },
+			update: func(c *Client, id string, req UpdateGroupRequest) (*Group, error) {
+				return c.UpdateCampaignGroup(id, req)
+			},
+			list: func(c *Client, params PaginationParams) ([]Group, *Pagination, error) {
+				return c.ListCampaignGroups(params)
+			},
 			createOK: http.StatusOK,
 		},
 		{
@@ -71,15 +75,32 @@ func bothGroupOps() []groupOps {
 			basePath: "/transactional-groups",
 			create:   func(c *Client, req CreateGroupRequest) (*Group, error) { return c.CreateTransactionalGroup(req) },
 			get:      func(c *Client, id string) (*Group, error) { return c.GetTransactionalGroup(id) },
-			update:   func(c *Client, id string, req UpdateGroupRequest) (*Group, error) { return c.UpdateTransactionalGroup(id, req) },
-			list:     func(c *Client, params PaginationParams) ([]Group, *Pagination, error) { return c.ListTransactionalGroups(params) },
+			update: func(c *Client, id string, req UpdateGroupRequest) (*Group, error) {
+				return c.UpdateTransactionalGroup(id, req)
+			},
+			list: func(c *Client, params PaginationParams) ([]Group, *Pagination, error) {
+				return c.ListTransactionalGroups(params)
+			},
+			createOK: http.StatusOK,
+		},
+		{
+			name:     "workflow",
+			basePath: "/workflow-groups",
+			create:   func(c *Client, req CreateGroupRequest) (*Group, error) { return c.CreateWorkflowGroup(req) },
+			get:      func(c *Client, id string) (*Group, error) { return c.GetWorkflowGroup(id) },
+			update: func(c *Client, id string, req UpdateGroupRequest) (*Group, error) {
+				return c.UpdateWorkflowGroup(id, req)
+			},
+			list: func(c *Client, params PaginationParams) ([]Group, *Pagination, error) {
+				return c.ListWorkflowGroups(params)
+			},
 			createOK: http.StatusOK,
 		},
 	}
 }
 
 func TestGroups_CreateAndGet(t *testing.T) {
-	for _, ops := range bothGroupOps() {
+	for _, ops := range allGroupOps() {
 		t.Run(ops.name+"/create", func(t *testing.T) {
 			var gotPath, gotMethod, gotBody string
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

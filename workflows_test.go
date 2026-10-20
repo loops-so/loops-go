@@ -25,6 +25,7 @@ const listWorkflowsResponse = `{
 			"id": "wf_1",
 			"url": "https://app.loops.so/workflows/wf_1",
 			"name": "Onboarding",
+			"workflowGroupId": "grp_1",
 			"createdAt": "2026-05-01T10:00:00Z",
 			"updatedAt": "2026-05-02T10:00:00Z"
 		},
@@ -32,6 +33,7 @@ const listWorkflowsResponse = `{
 			"id": "wf_2",
 			"url": "https://app.loops.so/workflows/wf_2",
 			"name": "Win-back",
+			"workflowGroupId": "grp_1",
 			"createdAt": "2026-04-01T10:00:00Z",
 			"updatedAt": "2026-04-05T10:00:00Z"
 		}
@@ -47,6 +49,7 @@ const getSimplifiedWorkflowResponse = `{
 	"description": "Welcome new signups",
 	"emoji": "👋",
 	"mailingListId": null,
+	"workflowGroupId": "grp_1",
 	"rootNodeId": "node_root",
 	"nodes": {
 		"node_root": {
@@ -93,6 +96,9 @@ func TestListWorkflows(t *testing.T) {
 	}
 	if workflows[0].URL != "https://app.loops.so/workflows/wf_1" {
 		t.Errorf("workflows[0].URL = %q", workflows[0].URL)
+	}
+	if workflows[0].WorkflowGroupID != "grp_1" {
+		t.Errorf("workflows[0].WorkflowGroupID = %q, want grp_1", workflows[0].WorkflowGroupID)
 	}
 }
 
@@ -198,6 +204,9 @@ func TestGetWorkflow(t *testing.T) {
 			}
 			if result.URL != "https://app.loops.so/workflows/wf_1" {
 				t.Errorf("URL = %q", result.URL)
+			}
+			if result.WorkflowGroupID != "grp_1" {
+				t.Errorf("WorkflowGroupID = %q, want grp_1", result.WorkflowGroupID)
 			}
 			if result.ID != "wf_1" {
 				t.Errorf("ID = %q, want wf_1", result.ID)
@@ -555,6 +564,7 @@ func TestCreateWorkflow(t *testing.T) {
 		"workflowRevisionId": null,
 		"name": "New flow",
 		"mailingListId": "ml_1",
+		"workflowGroupId": "grp_2",
 		"rootNodeId": "node_root",
 		"nodes": {}
 	}`
@@ -569,9 +579,10 @@ func TestCreateWorkflow(t *testing.T) {
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
 	wf, err := client.CreateWorkflow(CreateWorkflowRequest{
-		Name:          "New flow",
-		Description:   "desc",
-		MailingListID: ptr("ml_1"),
+		Name:            "New flow",
+		Description:     "desc",
+		MailingListID:   ptr("ml_1"),
+		WorkflowGroupID: "grp_2",
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -582,10 +593,10 @@ func TestCreateWorkflow(t *testing.T) {
 	if gotPath != "/workflows" {
 		t.Errorf("path = %q, want /workflows", gotPath)
 	}
-	if gotBody["name"] != "New flow" || gotBody["description"] != "desc" || gotBody["mailingListId"] != "ml_1" {
+	if gotBody["name"] != "New flow" || gotBody["description"] != "desc" || gotBody["mailingListId"] != "ml_1" || gotBody["workflowGroupId"] != "grp_2" {
 		t.Errorf("body = %+v", gotBody)
 	}
-	if wf.ID != "wf_new" || wf.Status != WorkflowStatusDraft {
+	if wf.ID != "wf_new" || wf.Status != WorkflowStatusDraft || wf.WorkflowGroupID != "grp_2" {
 		t.Errorf("wf = %+v", wf)
 	}
 	if wf.WorkflowRevisionID != nil {
@@ -605,7 +616,7 @@ func TestUpdateWorkflow_NullRevision(t *testing.T) {
 			t.Errorf("path = %q, want %q", r.URL.Path, want)
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"id":"wf_1","status":"Draft","workflowRevisionId":"rev_2","name":"Renamed","mailingListId":null,"rootNodeId":"n","nodes":{}}`))
+		w.Write([]byte(`{"id":"wf_1","status":"Draft","workflowRevisionId":"rev_2","name":"Renamed","mailingListId":null,"workflowGroupId":"grp_1","rootNodeId":"n","nodes":{}}`))
 	}))
 	defer server.Close()
 
@@ -629,8 +640,60 @@ func TestUpdateWorkflow_NullRevision(t *testing.T) {
 	if _, ok := gotBody["description"]; ok {
 		t.Errorf("description should be omitted, body = %+v", gotBody)
 	}
+	if _, ok := gotBody["workflowGroupId"]; ok {
+		t.Errorf("workflowGroupId should be omitted, body = %+v", gotBody)
+	}
 	if wf.Name != "Renamed" || wf.WorkflowRevisionID == nil || *wf.WorkflowRevisionID != "rev_2" {
 		t.Errorf("wf = %+v", wf)
+	}
+}
+
+func TestUpdateWorkflow_MoveToGroup(t *testing.T) {
+	var gotBody map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotBody = decodeBody(t, r)
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"id":"wf_1","status":"Draft","workflowRevisionId":"rev_2","name":"Onboarding","mailingListId":null,"workflowGroupId":"grp_2","rootNodeId":"n","nodes":{}}`))
+	}))
+	defer server.Close()
+
+	client := NewClient("test-key", WithBaseURL(server.URL))
+	wf, err := client.UpdateWorkflow("wf_1", UpdateWorkflowPropertiesRequest{
+		ExpectedRevisionID: ptr("rev_1"),
+		WorkflowGroupID:    "grp_2",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if gotBody["expectedRevisionId"] != "rev_1" || gotBody["workflowGroupId"] != "grp_2" {
+		t.Errorf("body = %+v", gotBody)
+	}
+	if _, ok := gotBody["name"]; ok {
+		t.Errorf("name should be omitted, body = %+v", gotBody)
+	}
+	if wf.WorkflowGroupID != "grp_2" {
+		t.Errorf("WorkflowGroupID = %q, want grp_2", wf.WorkflowGroupID)
+	}
+}
+
+func TestUpdateWorkflow_GroupNotFound400(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"message":"Workflow group not found"}`))
+	}))
+	defer server.Close()
+
+	client := NewClient("test-key", WithBaseURL(server.URL))
+	_, err := client.UpdateWorkflow("wf_1", UpdateWorkflowPropertiesRequest{
+		ExpectedRevisionID: ptr("rev_1"),
+		WorkflowGroupID:    "grp_missing",
+	})
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected *APIError, got %T: %v", err, err)
+	}
+	if apiErr.StatusCode != http.StatusBadRequest {
+		t.Errorf("StatusCode = %d, want 400", apiErr.StatusCode)
 	}
 }
 
@@ -707,7 +770,7 @@ func TestChangeWorkflowMailingList_NullClear(t *testing.T) {
 		json.NewDecoder(tee).Decode(&gotBody)
 		rawBody = buf.String()
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"updated","mailingListId":null,"workflowRevisionId":"rev_3","queuedContactCount":0,"workflow":{"id":"wf_1","status":"Draft","workflowRevisionId":"rev_3","mailingListId":null,"rootNodeId":"r","nodes":{}}}`))
+		w.Write([]byte(`{"status":"updated","mailingListId":null,"workflowRevisionId":"rev_3","queuedContactCount":0,"workflow":{"id":"wf_1","status":"Draft","workflowRevisionId":"rev_3","mailingListId":null,"workflowGroupId":"grp_1","rootNodeId":"r","nodes":{}}}`))
 	}))
 	defer server.Close()
 
@@ -754,7 +817,7 @@ func TestCreateWorkflowNode_Between(t *testing.T) {
 				{"id": "c2", "typeName": "AudienceFilter", "nextNodeIds": [], "appliesDownstream": false}
 			]
 		},
-		"workflow": {"id":"wf_1","status":"Draft","workflowRevisionId":"rev_5","mailingListId":null,"rootNodeId":"r","nodes":{}}
+		"workflow": {"id":"wf_1","status":"Draft","workflowRevisionId":"rev_5","mailingListId":null,"workflowGroupId":"grp_1","rootNodeId":"r","nodes":{}}
 	}`
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotBody = decodeBody(t, r)
@@ -808,7 +871,7 @@ func TestCreateWorkflowNode_Before_NullRevision(t *testing.T) {
 	var gotBody map[string]any
 	resp := `{
 		"node": {"id":"node_new","typeName":"TimerAction","nextNodeIds":[],"amount":0,"unit":"m","workflowRevisionId":"rev_1"},
-		"workflow": {"id":"wf_1","status":"Draft","workflowRevisionId":"rev_1","mailingListId":null,"rootNodeId":"r","nodes":{}}
+		"workflow": {"id":"wf_1","status":"Draft","workflowRevisionId":"rev_1","mailingListId":null,"workflowGroupId":"grp_1","rootNodeId":"r","nodes":{}}
 	}`
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		buf := new(strings.Builder)
@@ -851,7 +914,7 @@ func TestCreateWorkflowNode_Before_ToNodeID(t *testing.T) {
 	var gotBody map[string]any
 	resp := `{
 		"node": {"id":"node_new","typeName":"TimerAction","nextNodeIds":[],"amount":0,"unit":"m","workflowRevisionId":"rev_1"},
-		"workflow": {"id":"wf_1","status":"Draft","workflowRevisionId":"rev_1","mailingListId":null,"rootNodeId":"r","nodes":{}}
+		"workflow": {"id":"wf_1","status":"Draft","workflowRevisionId":"rev_1","mailingListId":null,"workflowGroupId":"grp_1","rootNodeId":"r","nodes":{}}
 	}`
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotBody = decodeBody(t, r)
@@ -885,7 +948,7 @@ func TestCreateWorkflowNode_After(t *testing.T) {
 	var gotBody map[string]any
 	resp := `{
 		"node": {"id":"node_new","typeName":"TimerAction","nextNodeIds":[],"amount":0,"unit":"m","workflowRevisionId":"rev_1"},
-		"workflow": {"id":"wf_1","status":"Draft","workflowRevisionId":"rev_1","mailingListId":null,"rootNodeId":"r","nodes":{}}
+		"workflow": {"id":"wf_1","status":"Draft","workflowRevisionId":"rev_1","mailingListId":null,"workflowGroupId":"grp_1","rootNodeId":"r","nodes":{}}
 	}`
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotBody = decodeBody(t, r)
@@ -928,7 +991,7 @@ func TestRerouteNodeConnection(t *testing.T) {
 		"typeName": "SignupTrigger",
 		"nextNodeIds": ["node_c"],
 		"workflowRevisionId": "rev_31",
-		"workflow": {"id":"wf_1","status":"Draft","workflowRevisionId":"rev_31","mailingListId":null,"rootNodeId":"node_a","nodes":{}}
+		"workflow": {"id":"wf_1","status":"Draft","workflowRevisionId":"rev_31","mailingListId":null,"workflowGroupId":"grp_1","rootNodeId":"node_a","nodes":{}}
 	}`
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotBody = decodeBody(t, r)
@@ -1082,7 +1145,7 @@ func TestUpdateWorkflowNode_RequestAndResponse(t *testing.T) {
 		"amount": 2,
 		"unit": "h",
 		"workflowRevisionId": "rev_9",
-		"workflow": {"id":"wf_1","status":"Draft","workflowRevisionId":"rev_9","mailingListId":null,"rootNodeId":"r","nodes":{}}
+		"workflow": {"id":"wf_1","status":"Draft","workflowRevisionId":"rev_9","mailingListId":null,"workflowGroupId":"grp_1","rootNodeId":"r","nodes":{}}
 	}`
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		buf := new(strings.Builder)
@@ -1135,7 +1198,7 @@ func TestAddWorkflowBranch(t *testing.T) {
 	var gotBody map[string]any
 	resp := `{
 		"node": {"id":"node_b","typeName":"BranchNode","nextNodeIds":["c1","c2","c3"],"workflowRevisionId":"rev_11"},
-		"workflow": {"id":"wf_1","status":"Draft","workflowRevisionId":"rev_11","mailingListId":null,"rootNodeId":"r","nodes":{}}
+		"workflow": {"id":"wf_1","status":"Draft","workflowRevisionId":"rev_11","mailingListId":null,"workflowGroupId":"grp_1","rootNodeId":"r","nodes":{}}
 	}`
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotBody = decodeBody(t, r)
@@ -1179,7 +1242,7 @@ func TestDeleteWorkflowNode(t *testing.T) {
 		gotPath = r.URL.Path
 		gotBody = decodeBody(t, r)
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"deleted","nodeIds":["node_x"],"workflowRevisionId":"rev_20","queuedContactCount":0,"workflow":{"id":"wf_1","status":"Draft","workflowRevisionId":"rev_20","mailingListId":null,"rootNodeId":"r","nodes":{}}}`))
+		w.Write([]byte(`{"status":"deleted","nodeIds":["node_x"],"workflowRevisionId":"rev_20","queuedContactCount":0,"workflow":{"id":"wf_1","status":"Draft","workflowRevisionId":"rev_20","mailingListId":null,"workflowGroupId":"grp_1","rootNodeId":"r","nodes":{}}}`))
 	}))
 	defer server.Close()
 
@@ -1497,7 +1560,7 @@ func TestCreateWorkflow_NullMailingList(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		b, _ := io.ReadAll(r.Body)
 		rawBody = string(b)
-		w.Write([]byte(`{"id":"wf_1","status":"Draft","workflowRevisionId":"rev_1","mailingListId":null,"rootNodeId":"r","nodes":{}}`))
+		w.Write([]byte(`{"id":"wf_1","status":"Draft","workflowRevisionId":"rev_1","mailingListId":null,"workflowGroupId":"grp_1","rootNodeId":"r","nodes":{}}`))
 	}))
 	defer server.Close()
 

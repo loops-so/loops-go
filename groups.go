@@ -8,8 +8,8 @@ import (
 	"net/url"
 )
 
-// Group is a campaign or transactional-email group. Each team has a reserved
-// "Unsorted" group that cannot be renamed or edited.
+// Group is a campaign, transactional-email, or workflow group. Each team has
+// a reserved "Unsorted" group that cannot be renamed or edited.
 type Group struct {
 	ID          string `json:"id"`
 	Name        string `json:"name"`
@@ -18,16 +18,17 @@ type Group struct {
 	UpdatedAt   string `json:"updatedAt"`
 }
 
-// CreateGroupRequest is the request body for [Client.CreateCampaignGroup]
-// and [Client.CreateTransactionalGroup]. Name cannot be the reserved value
-// "Unsorted".
+// CreateGroupRequest is the request body for [Client.CreateCampaignGroup],
+// [Client.CreateTransactionalGroup], and [Client.CreateWorkflowGroup]. Name
+// cannot be the reserved value "Unsorted".
 type CreateGroupRequest struct {
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
 }
 
-// UpdateGroupRequest is the request body for [Client.UpdateCampaignGroup]
-// and [Client.UpdateTransactionalGroup]. At least one field must be set.
+// UpdateGroupRequest is the request body for [Client.UpdateCampaignGroup],
+// [Client.UpdateTransactionalGroup], and [Client.UpdateWorkflowGroup]. At
+// least one field must be set.
 type UpdateGroupRequest struct {
 	Name        string `json:"name,omitempty"`
 	Description string `json:"description,omitempty"`
@@ -75,6 +76,27 @@ func (c *Client) UpdateTransactionalGroup(id string, req UpdateGroupRequest) (*G
 // [Paginate].
 func (c *Client) ListTransactionalGroups(params PaginationParams) ([]Group, *Pagination, error) {
 	return c.listGroups("/transactional-groups", params)
+}
+
+// CreateWorkflowGroup creates a new workflow group.
+func (c *Client) CreateWorkflowGroup(req CreateGroupRequest) (*Group, error) {
+	return c.createGroup("/workflow-groups", req)
+}
+
+// GetWorkflowGroup returns the workflow group identified by id.
+func (c *Client) GetWorkflowGroup(id string) (*Group, error) {
+	return c.getGroup("/workflow-groups/" + id)
+}
+
+// UpdateWorkflowGroup updates the workflow group identified by id.
+func (c *Client) UpdateWorkflowGroup(id string, req UpdateGroupRequest) (*Group, error) {
+	return c.updateGroup("/workflow-groups/"+id, req)
+}
+
+// ListWorkflowGroups returns a single page of workflow groups along with
+// pagination information. To iterate every page, use [Paginate].
+func (c *Client) ListWorkflowGroups(params PaginationParams) ([]Group, *Pagination, error) {
+	return c.listGroups("/workflow-groups", params)
 }
 
 func (c *Client) createGroup(path string, req CreateGroupRequest) (*Group, error) {

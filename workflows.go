@@ -11,13 +11,15 @@ import (
 )
 
 // WorkflowSummary is an entry in the [Client.ListWorkflows] response. URL is
-// the workflow's URL in the Loops app.
+// the workflow's URL in the Loops app. WorkflowGroupID is the ID of the
+// workflow group the workflow belongs to.
 type WorkflowSummary struct {
-	ID        string `json:"id"`
-	URL       string `json:"url"`
-	Name      string `json:"name"`
-	CreatedAt string `json:"createdAt"`
-	UpdatedAt string `json:"updatedAt"`
+	ID              string `json:"id"`
+	URL             string `json:"url"`
+	Name            string `json:"name"`
+	WorkflowGroupID string `json:"workflowGroupId"`
+	CreatedAt       string `json:"createdAt"`
+	UpdatedAt       string `json:"updatedAt"`
 }
 
 // SimplifiedWorkflow is returned by [Client.GetWorkflow]. Nodes is keyed by
@@ -25,7 +27,8 @@ type WorkflowSummary struct {
 // the WorkflowStatus* constants. WorkflowRevisionID is the current revision
 // token; pass it back as the expectedRevisionId on the next mutation (it may
 // be nil for workflows without a revision token yet). URL is the workflow's
-// URL in the Loops app.
+// URL in the Loops app. WorkflowGroupID is the ID of the workflow group the
+// workflow belongs to.
 type SimplifiedWorkflow struct {
 	ID                 string                            `json:"id"`
 	URL                string                            `json:"url"`
@@ -35,6 +38,7 @@ type SimplifiedWorkflow struct {
 	Description        string                            `json:"description,omitempty"`
 	Emoji              string                            `json:"emoji,omitempty"`
 	MailingListID      *string                           `json:"mailingListId"`
+	WorkflowGroupID    string                            `json:"workflowGroupId"`
 	RootNodeID         *string                           `json:"rootNodeId"`
 	Nodes              map[string]SimplifiedWorkflowNode `json:"nodes"`
 }
@@ -1171,11 +1175,14 @@ func (n CreatedWorkflowNode) MarshalJSON() ([]byte, error) {
 }
 
 // CreateWorkflowRequest is the request body for [Client.CreateWorkflow].
-// MailingListID is nullable.
+// MailingListID is nullable. WorkflowGroupID selects the group the workflow
+// is created in; when empty, the server places it in the team's Unsorted
+// group.
 type CreateWorkflowRequest struct {
-	Name          string  `json:"name"`
-	Description   string  `json:"description,omitempty"`
-	MailingListID *string `json:"mailingListId"`
+	Name            string  `json:"name"`
+	Description     string  `json:"description,omitempty"`
+	MailingListID   *string `json:"mailingListId"`
+	WorkflowGroupID string  `json:"workflowGroupId,omitempty"`
 }
 
 // CreateWorkflow creates a new workflow and returns it.
@@ -1211,14 +1218,17 @@ func (c *Client) CreateWorkflow(req CreateWorkflowRequest) (*SimplifiedWorkflow,
 // UpdateWorkflowPropertiesRequest is the request body for
 // [Client.UpdateWorkflow]. ExpectedRevisionID is required for optimistic
 // concurrency and is always sent (as JSON null when nil); a stale value
-// returns a 409. At least one of Name or Description should be set.
+// returns a 409. At least one of Name, Description, or WorkflowGroupID should
+// be set. Set WorkflowGroupID to move the workflow into a different group;
+// leave it empty to keep the existing group.
 type UpdateWorkflowPropertiesRequest struct {
 	ExpectedRevisionID *string
 	Name               string
 	Description        string
+	WorkflowGroupID    string
 }
 
-// UpdateWorkflow updates the name and/or description of the workflow
+// UpdateWorkflow updates the name, description, and/or group of the workflow
 // identified by id and returns its new state.
 func (c *Client) UpdateWorkflow(id string, req UpdateWorkflowPropertiesRequest) (*SimplifiedWorkflow, error) {
 	body := map[string]any{
@@ -1229,6 +1239,9 @@ func (c *Client) UpdateWorkflow(id string, req UpdateWorkflowPropertiesRequest) 
 	}
 	if req.Description != "" {
 		body["description"] = req.Description
+	}
+	if req.WorkflowGroupID != "" {
+		body["workflowGroupId"] = req.WorkflowGroupID
 	}
 
 	b, err := json.Marshal(body)
