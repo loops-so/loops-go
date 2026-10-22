@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -15,7 +16,7 @@ import (
 
 func TestDo_RetryResetsBody(t *testing.T) {
 	origSleep := sleep
-	sleep = func(time.Duration) {}
+	sleep = func(context.Context, time.Duration) error { return nil }
 	defer func() { sleep = origSleep }()
 
 	var bodies []string
@@ -172,7 +173,7 @@ func TestErrorFromResponse(t *testing.T) {
 
 func TestDo_Retries(t *testing.T) {
 	origSleep := sleep
-	sleep = func(time.Duration) {}
+	sleep = func(context.Context, time.Duration) error { return nil }
 	defer func() { sleep = origSleep }()
 
 	tests := []struct {
@@ -354,5 +355,63 @@ func TestDo_ContextCancel(t *testing.T) {
 	if err == nil {
 		resp.Body.Close()
 		t.Fatal("expected error from cancelled context, got nil")
+	}
+}
+
+type cancellationTransport struct {
+	started chan struct{}
+	status  int
+}
+
+func (t cancellationTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	select {
+	case <-t.started:
+	default:
+		close(t.started)
+	}
+	if err := req.Context().Err(); err != nil {
+		return nil, err
+	}
+	return &http.Response{StatusCode: t.status, Header: make(http.Header), Body: io.NopCloser(bytes.NewReader(nil)), Request: req}, nil
+}
+
+func TestDo_CancelsRetryBackoff(t *testing.T) {
+	for _, status := range []int{429, 503} {
+		for _, deadline := range []bool{false, true} {
+			t.Run(fmt.Sprintf("status%d/deadline%v", status, deadline), func(t *testing.T) {
+				var ctx context.Context
+				var cancel context.CancelFunc
+				if deadline {
+					ctx, cancel = context.WithTimeout(context.Background(), 20*time.Millisecond)
+				} else {
+					ctx, cancel = context.WithCancel(context.Background())
+				}
+				defer cancel()
+				started := make(chan struct{})
+				client := NewClient("test-key", WithHTTPClient(&http.Client{Transport: cancellationTransport{started, status}}))
+				done := make(chan error, 1)
+				go func() {
+					resp, err := client.Do(ctx, http.MethodGet, "/test", nil)
+					if resp != nil {
+						resp.Body.Close()
+					}
+					done <- err
+				}()
+				<-started
+				if !deadline {
+					time.Sleep(20 * time.Millisecond)
+					cancel()
+				}
+				select {
+				case err := <-done:
+					if !errors.Is(err, ctx.Err()) {
+						t.Fatalf("got %v, want context error %v", err, ctx.Err())
+					}
+				case <-time.After(250 * time.Millisecond):
+					err := <-done // Join the request goroutine before restoring test state.
+					t.Fatalf("cancellation waited for retry backoff: %v", err)
+				}
+			})
+		}
 	}
 }
