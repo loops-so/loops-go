@@ -358,60 +358,63 @@ func TestDo_ContextCancel(t *testing.T) {
 	}
 }
 
-type cancellationTransport struct {
-	started chan struct{}
-	status  int
-}
-
-func (t cancellationTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	select {
-	case <-t.started:
-	default:
-		close(t.started)
-	}
-	if err := req.Context().Err(); err != nil {
-		return nil, err
-	}
-	return &http.Response{StatusCode: t.status, Header: make(http.Header), Body: io.NopCloser(bytes.NewReader(nil)), Request: req}, nil
-}
-
 func TestDo_CancelsRetryBackoff(t *testing.T) {
-	for _, status := range []int{429, 503} {
-		for _, deadline := range []bool{false, true} {
-			t.Run(fmt.Sprintf("status%d/deadline%v", status, deadline), func(t *testing.T) {
-				var ctx context.Context
-				var cancel context.CancelFunc
-				if deadline {
-					ctx, cancel = context.WithTimeout(context.Background(), 20*time.Millisecond)
-				} else {
-					ctx, cancel = context.WithCancel(context.Background())
-				}
-				defer cancel()
-				started := make(chan struct{})
-				client := NewClient("test-key", WithHTTPClient(&http.Client{Transport: cancellationTransport{started, status}}))
-				done := make(chan error, 1)
-				go func() {
-					resp, err := client.Do(ctx, http.MethodGet, "/test", nil)
-					if resp != nil {
-						resp.Body.Close()
-					}
-					done <- err
-				}()
-				<-started
-				if !deadline {
-					time.Sleep(20 * time.Millisecond)
+	tests := []struct {
+		name     string
+		status   int
+		deadline bool
+	}{
+		{name: "cancel after 429", status: 429},
+		{name: "cancel after 503", status: 503},
+		{name: "deadline after 429", status: 429, deadline: true},
+		{name: "deadline after 503", status: 503, deadline: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var attempts atomic.Int32
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				attempts.Add(1)
+				w.WriteHeader(tt.status)
+			}))
+			defer server.Close()
+
+			ctx, cancel := context.WithCancel(context.Background())
+			if tt.deadline {
+				// Well past the time to the first request, well short of the 500ms backoff.
+				ctx, cancel = context.WithTimeout(context.Background(), 100*time.Millisecond)
+			}
+			defer cancel()
+
+			// Cancel once the first backoff starts, then wait on the real timer.
+			var backoffs atomic.Int32
+			origSleep := sleep
+			sleep = func(ctx context.Context, delay time.Duration) error {
+				backoffs.Add(1)
+				if !tt.deadline {
 					cancel()
 				}
-				select {
-				case err := <-done:
-					if !errors.Is(err, ctx.Err()) {
-						t.Fatalf("got %v, want context error %v", err, ctx.Err())
-					}
-				case <-time.After(250 * time.Millisecond):
-					err := <-done // Join the request goroutine before restoring test state.
-					t.Fatalf("cancellation waited for retry backoff: %v", err)
-				}
-			})
-		}
+				return sleepContext(ctx, delay)
+			}
+			defer func() { sleep = origSleep }()
+
+			client := NewClient("test-key", WithBaseURL(server.URL))
+			start := time.Now()
+			resp, err := client.Do(ctx, http.MethodGet, "/", nil)
+			elapsed := time.Since(start)
+			if resp != nil {
+				resp.Body.Close()
+			}
+
+			if !errors.Is(err, ctx.Err()) {
+				t.Fatalf("err = %v, want context error %v", err, ctx.Err())
+			}
+			if attempts.Load() != 1 || backoffs.Load() != 1 {
+				t.Fatalf("attempts = %d, backoffs = %d, want 1 each", attempts.Load(), backoffs.Load())
+			}
+			if elapsed >= baseDelay {
+				t.Errorf("Do returned after %v, want it to stop the %v backoff early", elapsed, baseDelay)
+			}
+		})
 	}
 }
