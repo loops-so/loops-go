@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -15,7 +16,7 @@ import (
 
 func TestDo_RetryResetsBody(t *testing.T) {
 	origSleep := sleep
-	sleep = func(time.Duration) {}
+	sleep = func(context.Context, time.Duration) error { return nil }
 	defer func() { sleep = origSleep }()
 
 	var bodies []string
@@ -172,7 +173,7 @@ func TestErrorFromResponse(t *testing.T) {
 
 func TestDo_Retries(t *testing.T) {
 	origSleep := sleep
-	sleep = func(time.Duration) {}
+	sleep = func(context.Context, time.Duration) error { return nil }
 	defer func() { sleep = origSleep }()
 
 	tests := []struct {
@@ -354,5 +355,66 @@ func TestDo_ContextCancel(t *testing.T) {
 	if err == nil {
 		resp.Body.Close()
 		t.Fatal("expected error from cancelled context, got nil")
+	}
+}
+
+func TestDo_CancelsRetryBackoff(t *testing.T) {
+	tests := []struct {
+		name     string
+		status   int
+		deadline bool
+	}{
+		{name: "cancel after 429", status: 429},
+		{name: "cancel after 503", status: 503},
+		{name: "deadline after 429", status: 429, deadline: true},
+		{name: "deadline after 503", status: 503, deadline: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var attempts atomic.Int32
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				attempts.Add(1)
+				w.WriteHeader(tt.status)
+			}))
+			defer server.Close()
+
+			ctx, cancel := context.WithCancel(context.Background())
+			if tt.deadline {
+				// Well past the time to the first request, well short of the 500ms backoff.
+				ctx, cancel = context.WithTimeout(context.Background(), 100*time.Millisecond)
+			}
+			defer cancel()
+
+			// Cancel once the first backoff starts, then wait on the real timer.
+			var backoffs atomic.Int32
+			origSleep := sleep
+			sleep = func(ctx context.Context, delay time.Duration) error {
+				backoffs.Add(1)
+				if !tt.deadline {
+					cancel()
+				}
+				return sleepContext(ctx, delay)
+			}
+			defer func() { sleep = origSleep }()
+
+			client := NewClient("test-key", WithBaseURL(server.URL))
+			start := time.Now()
+			resp, err := client.Do(ctx, http.MethodGet, "/", nil)
+			elapsed := time.Since(start)
+			if resp != nil {
+				resp.Body.Close()
+			}
+
+			if !errors.Is(err, ctx.Err()) {
+				t.Fatalf("err = %v, want context error %v", err, ctx.Err())
+			}
+			if attempts.Load() != 1 || backoffs.Load() != 1 {
+				t.Fatalf("attempts = %d, backoffs = %d, want 1 each", attempts.Load(), backoffs.Load())
+			}
+			if elapsed >= baseDelay {
+				t.Errorf("Do returned after %v, want it to stop the %v backoff early", elapsed, baseDelay)
+			}
+		})
 	}
 }

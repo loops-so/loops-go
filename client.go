@@ -39,7 +39,18 @@ const (
 	baseDelay  = 500 * time.Millisecond
 )
 
-var sleep = time.Sleep
+var sleep = sleepContext
+
+func sleepContext(ctx context.Context, delay time.Duration) error {
+	timer := time.NewTimer(delay)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
+	}
+}
 
 func isRetryable(statusCode int) bool {
 	return statusCode == http.StatusTooManyRequests || statusCode >= 500
@@ -180,6 +191,11 @@ func (c *Client) do(req *http.Request) (*http.Response, error) {
 	)
 	for attempt := 0; attempt <= maxRetries; attempt++ {
 		if attempt > 0 {
+			delay := time.Duration(1<<(attempt-1)) * baseDelay
+			jitter := time.Duration(rand.Int64N(int64(delay / 2)))
+			if err := sleep(req.Context(), delay+jitter); err != nil {
+				return nil, fmt.Errorf("request failed: %w", err)
+			}
 			if req.GetBody != nil {
 				body, err := req.GetBody()
 				if err != nil {
@@ -187,9 +203,6 @@ func (c *Client) do(req *http.Request) (*http.Response, error) {
 				}
 				req.Body = body
 			}
-			delay := time.Duration(1<<(attempt-1)) * baseDelay
-			jitter := time.Duration(rand.Int64N(int64(delay / 2)))
-			sleep(delay + jitter)
 		}
 		resp, err = c.httpClient.Do(req)
 		if err != nil {
