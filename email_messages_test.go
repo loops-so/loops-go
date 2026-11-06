@@ -162,6 +162,12 @@ func TestUpdateEmailMessage(t *testing.T) {
 			wantAPIErr: &APIError{StatusCode: http.StatusConflict, Message: "Revision mismatch"},
 		},
 		{
+			name:       "workflow sending",
+			statusCode: http.StatusConflict,
+			body:       `{"message":"Workflow must not be sending. Current status: Sending."}`,
+			wantAPIErr: &APIError{StatusCode: http.StatusConflict, Message: "Workflow must not be sending. Current status: Sending."},
+		},
+		{
 			name:       "not found",
 			statusCode: http.StatusNotFound,
 			body:       `{"success":false,"message":"Email message not found"}`,
@@ -506,6 +512,122 @@ func TestPreviewEmailMessage(t *testing.T) {
 			}
 			if resp.ID != "em_abc123" {
 				t.Errorf("ID = %q", resp.ID)
+			}
+			if tt.wantField != nil {
+				tt.wantField(t, sent)
+			}
+		})
+	}
+}
+
+func TestRenderEmailMessage(t *testing.T) {
+	tests := []struct {
+		name       string
+		req        EmailMessageRenderRequest
+		statusCode int
+		body       string
+		wantAPIErr *APIError
+		wantBody   string
+		wantField  func(t *testing.T, sent map[string]any)
+	}{
+		{
+			name:       "empty request",
+			req:        EmailMessageRenderRequest{},
+			statusCode: http.StatusOK,
+			body:       `{"html":"<!doctype html><html>...</html>"}`,
+			wantBody:   "{}",
+		},
+		{
+			name:       "transactional render",
+			req:        EmailMessageRenderRequest{DataVariables: map[string]string{"loginUrl": "https://app.company.com/login"}},
+			statusCode: http.StatusOK,
+			body:       `{"html":"<!doctype html><html>...</html>"}`,
+			wantField: func(t *testing.T, sent map[string]any) {
+				dv, _ := sent["dataVariables"].(map[string]any)
+				if dv["loginUrl"] != "https://app.company.com/login" {
+					t.Errorf("dataVariables = %v", dv)
+				}
+				if _, has := sent["contactProperties"]; has {
+					t.Errorf("contactProperties should be omitted")
+				}
+				if _, has := sent["eventProperties"]; has {
+					t.Errorf("eventProperties should be omitted")
+				}
+			},
+		},
+		{
+			name:       "workflow render",
+			req:        EmailMessageRenderRequest{ContactProperties: map[string]string{"firstName": "Alex"}, EventProperties: map[string]string{"planName": "Pro"}},
+			statusCode: http.StatusOK,
+			body:       `{"html":"<!doctype html><html>...</html>"}`,
+			wantField: func(t *testing.T, sent map[string]any) {
+				cp, _ := sent["contactProperties"].(map[string]any)
+				if cp["firstName"] != "Alex" {
+					t.Errorf("contactProperties = %v", cp)
+				}
+				ep, _ := sent["eventProperties"].(map[string]any)
+				if ep["planName"] != "Pro" {
+					t.Errorf("eventProperties = %v", ep)
+				}
+				if _, has := sent["dataVariables"]; has {
+					t.Errorf("dataVariables should be omitted")
+				}
+			},
+		},
+		{
+			name:       "not found",
+			req:        EmailMessageRenderRequest{},
+			statusCode: http.StatusNotFound,
+			body:       `{"message":"Email message not found."}`,
+			wantAPIErr: &APIError{StatusCode: http.StatusNotFound, Message: "Email message not found."},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var sent map[string]any
+			var gotPath, gotMethod, gotBody string
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				gotPath = r.URL.Path
+				gotMethod = r.Method
+				b, _ := io.ReadAll(r.Body)
+				gotBody = string(b)
+				json.Unmarshal(b, &sent)
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.body))
+			}))
+			defer server.Close()
+
+			client := NewClient("test-key", WithBaseURL(server.URL))
+			resp, err := client.RenderEmailMessage("em_abc123", tt.req)
+
+			if tt.wantAPIErr != nil {
+				var apiErr *APIError
+				if !errors.As(err, &apiErr) {
+					t.Fatalf("expected *APIError, got %T: %v", err, err)
+				}
+				if apiErr.StatusCode != tt.wantAPIErr.StatusCode {
+					t.Errorf("StatusCode = %d", apiErr.StatusCode)
+				}
+				if apiErr.Message != tt.wantAPIErr.Message {
+					t.Errorf("Message = %q, want %q", apiErr.Message, tt.wantAPIErr.Message)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if gotMethod != http.MethodPost {
+				t.Errorf("method = %q, want POST", gotMethod)
+			}
+			if gotPath != "/email-messages/em_abc123/render" {
+				t.Errorf("path = %q", gotPath)
+			}
+			if resp.HTML != "<!doctype html><html>...</html>" {
+				t.Errorf("HTML = %q", resp.HTML)
+			}
+			if tt.wantBody != "" && gotBody != tt.wantBody {
+				t.Errorf("body = %q, want %q", gotBody, tt.wantBody)
 			}
 			if tt.wantField != nil {
 				tt.wantField(t, sent)

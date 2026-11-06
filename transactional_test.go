@@ -156,8 +156,8 @@ func TestListTransactional_ResponseData(t *testing.T) {
 
 func TestListTransactional_QueryParams(t *testing.T) {
 	tests := []struct {
-		name       string
-		params     PaginationParams
+		name        string
+		params      PaginationParams
 		wantPerPage string
 		wantCursor  string
 	}{

@@ -600,7 +600,7 @@ func TestListTransactionals(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			items, pagination, err := client.ListTransactionals(PaginationParams{})
+			items, pagination, err := client.ListTransactionals(ListTransactionalsParams{})
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -647,7 +647,7 @@ func TestListTransactionals_ResponseData(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	items, _, err := client.ListTransactionals(PaginationParams{})
+	items, _, err := client.ListTransactionals(ListTransactionalsParams{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -672,29 +672,38 @@ func TestListTransactionals_ResponseData(t *testing.T) {
 func TestListTransactionals_QueryParams(t *testing.T) {
 	tests := []struct {
 		name        string
-		params      PaginationParams
+		params      ListTransactionalsParams
 		wantPerPage string
 		wantCursor  string
+		wantGroupID string
 	}{
 		{
 			name:   "no params",
-			params: PaginationParams{},
+			params: ListTransactionalsParams{},
 		},
 		{
 			name:        "both params",
-			params:      PaginationParams{PerPage: "10", Cursor: "xyz"},
+			params:      ListTransactionalsParams{PaginationParams: PaginationParams{PerPage: "10", Cursor: "xyz"}},
 			wantPerPage: "10",
 			wantCursor:  "xyz",
+		},
+		{
+			name:        "group filter",
+			params:      ListTransactionalsParams{TransactionalGroupID: "grp_1"},
+			wantGroupID: "grp_1",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var gotPath, gotPerPage, gotCursor string
+			var gotPath, gotPerPage, gotCursor, gotGroupID string
+			var hasGroupID bool
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				gotPath = r.URL.Path
 				gotPerPage = r.URL.Query().Get("perPage")
 				gotCursor = r.URL.Query().Get("cursor")
+				gotGroupID = r.URL.Query().Get("transactionalGroupId")
+				hasGroupID = r.URL.Query().Has("transactionalGroupId")
 				w.WriteHeader(http.StatusOK)
 				w.Write([]byte(`{"pagination":{},"data":[]}`))
 			}))
@@ -711,6 +720,12 @@ func TestListTransactionals_QueryParams(t *testing.T) {
 			}
 			if gotCursor != tt.wantCursor {
 				t.Errorf("cursor = %q, want %q", gotCursor, tt.wantCursor)
+			}
+			if gotGroupID != tt.wantGroupID {
+				t.Errorf("transactionalGroupId = %q, want %q", gotGroupID, tt.wantGroupID)
+			}
+			if hasGroupID != (tt.wantGroupID != "") {
+				t.Errorf("transactionalGroupId sent = %v, want %v", hasGroupID, tt.wantGroupID != "")
 			}
 		})
 	}

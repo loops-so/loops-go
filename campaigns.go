@@ -235,15 +235,26 @@ func (c *Client) GetCampaign(id string) (*Campaign, error) {
 	return &result, nil
 }
 
+// ListCampaignsParams controls a [Client.ListCampaigns] request. Set
+// CampaignGroupID to return only the campaigns in that campaign group. An ID
+// that matches no group returns an empty list.
+type ListCampaignsParams struct {
+	PaginationParams
+	CampaignGroupID string
+}
+
 // ListCampaigns returns a single page of campaigns along with pagination
 // information. To iterate every page, use [Paginate].
-func (c *Client) ListCampaigns(params PaginationParams) ([]Campaign, *Pagination, error) {
+func (c *Client) ListCampaigns(params ListCampaignsParams) ([]Campaign, *Pagination, error) {
 	q := url.Values{}
 	if params.PerPage != "" {
 		q.Set("perPage", params.PerPage)
 	}
 	if params.Cursor != "" {
 		q.Set("cursor", params.Cursor)
+	}
+	if params.CampaignGroupID != "" {
+		q.Set("campaignGroupId", params.CampaignGroupID)
 	}
 
 	path := "/campaigns"

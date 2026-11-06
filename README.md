@@ -62,7 +62,7 @@ client := loops.NewClient("YOUR_API_KEY",
 - Event patterns — `ListEventPatterns`, `GetEventPatternByName`, `GetEventPattern`
 - Transactional — `SendTransactional`, `ListTransactionals`, `CreateTransactional`, `GetTransactional`, `UpdateTransactional`, `EnsureTransactionalDraft`, `PublishTransactional`, `GetTransactionalMetrics`
 - Transactional groups — `CreateTransactionalGroup`, `GetTransactionalGroup`, `UpdateTransactionalGroup`, `ListTransactionalGroups`
-- Email messages — `GetEmailMessage`, `UpdateEmailMessage`, `PreviewEmailMessage`, `GetEmailMessageGuardian`
+- Email messages — `GetEmailMessage`, `UpdateEmailMessage`, `PreviewEmailMessage`, `RenderEmailMessage`, `GetEmailMessageGuardian`
 - Campaigns — `CreateCampaign`, `UpdateCampaign`, `GetCampaign`, `ListCampaigns`, `GetCampaignMetrics`
 - Campaign groups — `CreateCampaignGroup`, `GetCampaignGroup`, `UpdateCampaignGroup`, `ListCampaignGroups`
 - Components — `GetComponent`, `ListComponents`, `CreateComponent`, `UpdateComponent`
@@ -97,10 +97,13 @@ Requests are automatically retried with exponential backoff and jitter on `429` 
 
 ## Pagination
 
-`ListTransactionals` and `ListCampaigns` return a single page of results along with a `*Pagination` value. Pass a `PaginationParams` to control page size and cursor:
+Paginated list methods return a single page of results and a `*Pagination` value. Most of them take a `PaginationParams` to control page size and cursor. `ListCampaigns`, `ListTransactionals`, and `ListWorkflows` take their own params type. Each type embeds `PaginationParams` and adds a group filter (`CampaignGroupID`, `TransactionalGroupID`, or `WorkflowGroupID`):
 
 ```go
-items, page, err := client.ListTransactionals(loops.PaginationParams{PerPage: "50"})
+items, page, err := client.ListTransactionals(loops.ListTransactionalsParams{
+    PaginationParams:     loops.PaginationParams{PerPage: "50"},
+    TransactionalGroupID: "grp_123",
+})
 if err != nil {
     log.Fatal(err)
 }
@@ -111,7 +114,9 @@ To fetch every page, use the generic `Paginate` helper:
 
 ```go
 all, err := loops.Paginate(func(cursor string) ([]loops.Transactional, *loops.Pagination, error) {
-    return client.ListTransactionals(loops.PaginationParams{Cursor: cursor})
+    return client.ListTransactionals(loops.ListTransactionalsParams{
+        PaginationParams: loops.PaginationParams{Cursor: cursor},
+    })
 })
 ```
 

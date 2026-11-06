@@ -153,7 +153,7 @@ func TestCreateUpload_RequestBody(t *testing.T) {
 
 func TestUpload(t *testing.T) {
 	var (
-		gotCreatePath, gotPutPath, gotCompletePath string
+		gotCreatePath, gotPutPath, gotCompletePath  string
 		gotPutMethod, gotPutContentType, gotPutAuth string
 		gotPutBody                                  []byte
 		gotPutContentLength                         int64

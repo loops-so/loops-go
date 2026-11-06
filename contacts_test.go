@@ -372,15 +372,15 @@ func TestUpdateContact(t *testing.T) {
 
 func TestCheckContactSuppression(t *testing.T) {
 	tests := []struct {
-		name         string
-		email        string
-		userID       string
-		statusCode   int
-		body         string
-		wantAPIErr   *APIError
-		wantErrMsg   string
-		wantQuery    string
-		wantResult   *ContactSuppression
+		name       string
+		email      string
+		userID     string
+		statusCode int
+		body       string
+		wantAPIErr *APIError
+		wantErrMsg string
+		wantQuery  string
+		wantResult *ContactSuppression
 	}{
 		{
 			name:       "suppressed by email",

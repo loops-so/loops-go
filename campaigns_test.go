@@ -446,7 +446,7 @@ func TestListCampaigns(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			campaigns, pagination, err := client.ListCampaigns(PaginationParams{})
+			campaigns, pagination, err := client.ListCampaigns(ListCampaignsParams{})
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -493,7 +493,7 @@ func TestListCampaigns_ResponseData(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	campaigns, _, err := client.ListCampaigns(PaginationParams{})
+	campaigns, _, err := client.ListCampaigns(ListCampaignsParams{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -518,28 +518,38 @@ func TestListCampaigns_ResponseData(t *testing.T) {
 func TestListCampaigns_QueryParams(t *testing.T) {
 	tests := []struct {
 		name        string
-		params      PaginationParams
+		params      ListCampaignsParams
 		wantPerPage string
 		wantCursor  string
+		wantGroupID string
 	}{
 		{
 			name:   "no params",
-			params: PaginationParams{},
+			params: ListCampaignsParams{},
 		},
 		{
 			name:        "both params",
-			params:      PaginationParams{PerPage: "10", Cursor: "xyz"},
+			params:      ListCampaignsParams{PaginationParams: PaginationParams{PerPage: "10", Cursor: "xyz"}},
 			wantPerPage: "10",
 			wantCursor:  "xyz",
+		},
+		{
+			name:        "group filter",
+			params:      ListCampaignsParams{CampaignGroupID: "grp_1"},
+			wantGroupID: "grp_1",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var gotPerPage, gotCursor string
+			var gotPath, gotPerPage, gotCursor, gotGroupID string
+			var hasGroupID bool
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				gotPath = r.URL.Path
 				gotPerPage = r.URL.Query().Get("perPage")
 				gotCursor = r.URL.Query().Get("cursor")
+				gotGroupID = r.URL.Query().Get("campaignGroupId")
+				hasGroupID = r.URL.Query().Has("campaignGroupId")
 				w.WriteHeader(http.StatusOK)
 				w.Write([]byte(`{"pagination":{},"data":[]}`))
 			}))
@@ -548,11 +558,20 @@ func TestListCampaigns_QueryParams(t *testing.T) {
 			client := NewClient("test-key", WithBaseURL(server.URL))
 			client.ListCampaigns(tt.params)
 
+			if gotPath != "/campaigns" {
+				t.Errorf("path = %q, want /campaigns", gotPath)
+			}
 			if gotPerPage != tt.wantPerPage {
 				t.Errorf("perPage = %q, want %q", gotPerPage, tt.wantPerPage)
 			}
 			if gotCursor != tt.wantCursor {
 				t.Errorf("cursor = %q, want %q", gotCursor, tt.wantCursor)
+			}
+			if gotGroupID != tt.wantGroupID {
+				t.Errorf("campaignGroupId = %q, want %q", gotGroupID, tt.wantGroupID)
+			}
+			if hasGroupID != (tt.wantGroupID != "") {
+				t.Errorf("campaignGroupId sent = %v, want %v", hasGroupID, tt.wantGroupID != "")
 			}
 		})
 	}

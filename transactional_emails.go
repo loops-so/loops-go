@@ -192,15 +192,26 @@ func (c *Client) PublishTransactional(id string) (*Transactional, error) {
 	return &result, nil
 }
 
+// ListTransactionalsParams controls a [Client.ListTransactionals] request.
+// Set TransactionalGroupID to return only the transactional emails in that
+// transactional group. An ID that matches no group returns an empty list.
+type ListTransactionalsParams struct {
+	PaginationParams
+	TransactionalGroupID string
+}
+
 // ListTransactionals returns a single page of transactional emails along
 // with pagination information. To iterate every page, use [Paginate].
-func (c *Client) ListTransactionals(params PaginationParams) ([]Transactional, *Pagination, error) {
+func (c *Client) ListTransactionals(params ListTransactionalsParams) ([]Transactional, *Pagination, error) {
 	q := url.Values{}
 	if params.PerPage != "" {
 		q.Set("perPage", params.PerPage)
 	}
 	if params.Cursor != "" {
 		q.Set("cursor", params.Cursor)
+	}
+	if params.TransactionalGroupID != "" {
+		q.Set("transactionalGroupId", params.TransactionalGroupID)
 	}
 
 	path := "/transactional-emails"
