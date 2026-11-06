@@ -10,13 +10,13 @@ import (
 
 func TestGetAPIKey(t *testing.T) {
 	tests := []struct {
-		name          string
-		statusCode    int
-		body          string
-		wantAPIErr    *APIError
-		wantErrMsg    string
-		wantTeam      string
-		wantSuccess   bool
+		name        string
+		statusCode  int
+		body        string
+		wantAPIErr  *APIError
+		wantErrMsg  string
+		wantTeam    string
+		wantSuccess bool
 	}{
 		{
 			name:        "success",
