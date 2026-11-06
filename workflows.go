@@ -701,15 +701,26 @@ func mergeMarshal(inner any, extra map[string]any) ([]byte, error) {
 	return json.Marshal(fields)
 }
 
+// ListWorkflowsParams controls a [Client.ListWorkflows] request. Set
+// WorkflowGroupID to return only the workflows in that workflow group. An ID
+// that matches no group returns an empty list.
+type ListWorkflowsParams struct {
+	PaginationParams
+	WorkflowGroupID string
+}
+
 // ListWorkflows returns a single page of workflow summaries along with
 // pagination information. To iterate every page, use [Paginate].
-func (c *Client) ListWorkflows(params PaginationParams) ([]WorkflowSummary, *Pagination, error) {
+func (c *Client) ListWorkflows(params ListWorkflowsParams) ([]WorkflowSummary, *Pagination, error) {
 	q := url.Values{}
 	if params.PerPage != "" {
 		q.Set("perPage", params.PerPage)
 	}
 	if params.Cursor != "" {
 		q.Set("cursor", params.Cursor)
+	}
+	if params.WorkflowGroupID != "" {
+		q.Set("workflowGroupId", params.WorkflowGroupID)
 	}
 
 	path := "/workflows"
@@ -1600,7 +1611,8 @@ func (n UpdateWorkflowNodeResponse) MarshalJSON() ([]byte, error) {
 }
 
 // UpdateWorkflowNode applies req.Payload to the node identified by
-// workflowID/nodeID and returns the updated node.
+// workflowID/nodeID and returns the updated node. The API rejects the update
+// while the workflow is sending.
 func (c *Client) UpdateWorkflowNode(workflowID, nodeID string, req UpdateWorkflowNodeRequest) (*UpdateWorkflowNodeResponse, error) {
 	body := map[string]any{
 		"expectedRevisionId": req.ExpectedRevisionID,
@@ -1745,7 +1757,8 @@ func (c *Client) deleteWorkflowNode(path string, req DeleteWorkflowNodeRequest) 
 
 // DeleteWorkflowNode deletes the node identified by workflowID/nodeID. With the
 // default "fail" policy (or DryRun), a response whose Status is not "deleted"
-// reports the queued-contact impact instead of applying the deletion.
+// reports the queued-contact impact instead of applying the deletion. The API
+// rejects the deletion while the workflow is sending.
 func (c *Client) DeleteWorkflowNode(workflowID, nodeID string, req DeleteWorkflowNodeRequest) (*DeleteWorkflowNodeResponse, error) {
 	return c.deleteWorkflowNode("/workflows/"+workflowID+"/nodes/"+nodeID, req)
 }

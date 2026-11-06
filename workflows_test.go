@@ -81,7 +81,7 @@ func TestListWorkflows(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	workflows, pagination, err := client.ListWorkflows(PaginationParams{})
+	workflows, pagination, err := client.ListWorkflows(ListWorkflowsParams{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -103,28 +103,64 @@ func TestListWorkflows(t *testing.T) {
 }
 
 func TestListWorkflows_QueryParams(t *testing.T) {
-	var gotPath, gotPerPage, gotCursor string
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotPath = r.URL.Path
-		gotPerPage = r.URL.Query().Get("perPage")
-		gotCursor = r.URL.Query().Get("cursor")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"pagination":{},"data":[]}`))
-	}))
-	defer server.Close()
+	tests := []struct {
+		name        string
+		params      ListWorkflowsParams
+		wantPerPage string
+		wantCursor  string
+		wantGroupID string
+	}{
+		{
+			name:   "no params",
+			params: ListWorkflowsParams{},
+		},
+		{
+			name: "all params",
+			params: ListWorkflowsParams{
+				PaginationParams: PaginationParams{PerPage: "25", Cursor: "abc"},
+				WorkflowGroupID:  "grp_1",
+			},
+			wantPerPage: "25",
+			wantCursor:  "abc",
+			wantGroupID: "grp_1",
+		},
+	}
 
-	client := NewClient("test-key", WithBaseURL(server.URL))
-	if _, _, err := client.ListWorkflows(PaginationParams{PerPage: "25", Cursor: "abc"}); err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if gotPath != "/workflows" {
-		t.Errorf("path = %q, want /workflows", gotPath)
-	}
-	if gotPerPage != "25" {
-		t.Errorf("perPage = %q, want 25", gotPerPage)
-	}
-	if gotCursor != "abc" {
-		t.Errorf("cursor = %q, want abc", gotCursor)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var gotPath, gotPerPage, gotCursor, gotGroupID string
+			var hasGroupID bool
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				gotPath = r.URL.Path
+				gotPerPage = r.URL.Query().Get("perPage")
+				gotCursor = r.URL.Query().Get("cursor")
+				gotGroupID = r.URL.Query().Get("workflowGroupId")
+				hasGroupID = r.URL.Query().Has("workflowGroupId")
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(`{"pagination":{},"data":[]}`))
+			}))
+			defer server.Close()
+
+			client := NewClient("test-key", WithBaseURL(server.URL))
+			if _, _, err := client.ListWorkflows(tt.params); err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if gotPath != "/workflows" {
+				t.Errorf("path = %q, want /workflows", gotPath)
+			}
+			if gotPerPage != tt.wantPerPage {
+				t.Errorf("perPage = %q, want %q", gotPerPage, tt.wantPerPage)
+			}
+			if gotCursor != tt.wantCursor {
+				t.Errorf("cursor = %q, want %q", gotCursor, tt.wantCursor)
+			}
+			if gotGroupID != tt.wantGroupID {
+				t.Errorf("workflowGroupId = %q, want %q", gotGroupID, tt.wantGroupID)
+			}
+			if hasGroupID != (tt.wantGroupID != "") {
+				t.Errorf("workflowGroupId sent = %v, want %v", hasGroupID, tt.wantGroupID != "")
+			}
+		})
 	}
 }
 

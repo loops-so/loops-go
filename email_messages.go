@@ -17,8 +17,9 @@ const EmailFormatPlain = "plain"
 // including its LMX body. Warnings is populated by the LMX linter when the
 // message is fetched or updated.
 //
-// CampaignID and TransactionalID are mutually exclusive — exactly one is
-// non-nil and identifies the parent.
+// CampaignID and TransactionalID are mutually exclusive. At most one is
+// non-nil and identifies the parent. Both are nil for a workflow email
+// message.
 type EmailMessage struct {
 	ID                         string            `json:"id"`
 	CampaignID                 *string           `json:"campaignId,omitempty"`
@@ -78,6 +79,25 @@ type EmailMessagePreviewResponse struct {
 	ID string `json:"id"`
 }
 
+// EmailMessageRenderRequest is the request body for
+// [Client.RenderEmailMessage]. All fields are optional. The accepted variable
+// fields depend on the parent email message's type:
+//   - campaign renders accept ContactProperties
+//   - workflow renders accept ContactProperties and EventProperties
+//   - transactional renders accept DataVariables
+type EmailMessageRenderRequest struct {
+	ContactProperties map[string]string `json:"contactProperties,omitempty"`
+	EventProperties   map[string]string `json:"eventProperties,omitempty"`
+	DataVariables     map[string]string `json:"dataVariables,omitempty"`
+}
+
+// EmailMessageRenderResponse is returned by [Client.RenderEmailMessage].
+// HTML is the rendered email body. For an email made in the editor, HTML
+// contains the rendered subject in <title> and the rendered preview text.
+type EmailMessageRenderResponse struct {
+	HTML string `json:"html"`
+}
+
 // GuardianRuleItem is a single element that triggered a [GuardianRule].
 type GuardianRuleItem struct {
 	Label    string `json:"label"`
@@ -128,7 +148,10 @@ func (c *Client) GetEmailMessage(id string) (*EmailMessage, error) {
 
 // UpdateEmailMessage updates the email message identified by id with the
 // fields selected in req.Set and returns its new state. See
-// [UpdateEmailMessageRequest] for the selection semantics.
+// [UpdateEmailMessageRequest] for the selection semantics. The API rejects
+// the update when the parent campaign is not a draft, when the email message
+// is the published email message of a transactional email, or when the
+// parent workflow is sending.
 func (c *Client) UpdateEmailMessage(id string, req UpdateEmailMessageRequest) (*EmailMessage, error) {
 	body := map[string]any{}
 	if req.Set["subject"] {
@@ -227,6 +250,38 @@ func (c *Client) PreviewEmailMessage(id string, req EmailMessagePreviewRequest) 
 	}
 
 	var result EmailMessagePreviewResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &result, nil
+}
+
+// RenderEmailMessage renders the HTML of the email message identified by id
+// without sending it. See [EmailMessageRenderRequest] for the allowed
+// variable fields by parent type.
+func (c *Client) RenderEmailMessage(id string, req EmailMessageRenderRequest) (*EmailMessageRenderResponse, error) {
+	b, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode request: %w", err)
+	}
+
+	httpReq, err := c.newRequest(http.MethodPost, "/email-messages/"+id+"/render", bytes.NewReader(b))
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.do(httpReq)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errorFromResponse(resp)
+	}
+
+	var result EmailMessageRenderResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
