@@ -434,7 +434,7 @@ func TestPreviewEmailMessage(t *testing.T) {
 	}{
 		{
 			name:       "transactional preview",
-			req:        EmailMessagePreviewRequest{Emails: []string{"test@example.com"}, DataVariables: map[string]any{"url": "https://example.com"}},
+			req:        EmailMessagePreviewRequest{Emails: []string{"test@example.com"}, DataVariables: map[string]string{"url": "https://example.com"}},
 			statusCode: http.StatusOK,
 			body:       previewResponse,
 			wantField: func(t *testing.T, sent map[string]any) {

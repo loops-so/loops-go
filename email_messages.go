@@ -69,7 +69,7 @@ type EmailMessagePreviewRequest struct {
 	Emails            []string          `json:"emails"`
 	ContactProperties map[string]string `json:"contactProperties,omitempty"`
 	EventProperties   map[string]string `json:"eventProperties,omitempty"`
-	DataVariables     map[string]any    `json:"dataVariables,omitempty"`
+	DataVariables     map[string]string `json:"dataVariables,omitempty"`
 }
 
 // EmailMessagePreviewResponse is returned by [Client.PreviewEmailMessage].
