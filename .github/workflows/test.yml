@@ -10,9 +10,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@v6.1.0
+      - uses: actions/setup-go@v6.5.0
         with:
           go-version-file: go.mod
-      - uses: go-task/setup-task@v2
+      - uses: go-task/setup-task@v2.2.0
       - run: task test
