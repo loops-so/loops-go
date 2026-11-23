@@ -39,6 +39,16 @@ const footerWithVariantsResponse = `{
 	"placement": "inside",
 	"createdAt": "2026-10-27T10:00:00.000Z",
 	"updatedAt": "2026-11-02T08:30:00.000Z",
+	"variants": [` + footerVariantResponse + `]
+}`
+
+const setDefaultFooterResponse = `{
+	"id": "ftr_1",
+	"name": "Main footer",
+	"isDefault": true,
+	"placement": "inside",
+	"createdAt": "2026-10-27T10:00:00.000Z",
+	"updatedAt": "2026-11-02T08:30:00.000Z",
 	"updatedEmailCount": 12,
 	"variants": [` + footerVariantResponse + `]
 }`
@@ -221,6 +231,19 @@ func TestCreateFooter(t *testing.T) {
 	}
 }
 
+func TestCreateFooter_RejectsOK(t *testing.T) {
+	client, _ := newFooterServer(t, http.StatusOK, footerWithVariantsResponse)
+
+	var apiErr *APIError
+	_, err := client.CreateFooter(CreateFooterRequest{})
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected *APIError, got %T: %v", err, err)
+	}
+	if apiErr.StatusCode != http.StatusOK {
+		t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, http.StatusOK)
+	}
+}
+
 func TestGetFooter(t *testing.T) {
 	client, got := newFooterServer(t, http.StatusOK, footerWithVariantsResponse)
 
@@ -242,6 +265,11 @@ func TestUpdateFooter(t *testing.T) {
 			name:     "name and placement",
 			req:      UpdateFooterRequest{Name: "Marketing footer", Placement: FooterPlacementBelow},
 			wantBody: `{"name":"Marketing footer","placement":"below"}`,
+		},
+		{
+			name:     "name only",
+			req:      UpdateFooterRequest{Name: "Marketing footer"},
+			wantBody: `{"name":"Marketing footer"}`,
 		},
 		{
 			name:     "placement only",
@@ -274,7 +302,7 @@ func TestDeleteFooter(t *testing.T) {
 }
 
 func TestSetDefaultFooter(t *testing.T) {
-	client, got := newFooterServer(t, http.StatusOK, footerWithVariantsResponse)
+	client, got := newFooterServer(t, http.StatusOK, setDefaultFooterResponse)
 
 	result, err := client.SetDefaultFooter("ftr_1", SetDefaultFooterRequest{ExistingEmails: FooterExistingEmailsPreviousDefault})
 	if err != nil {
@@ -340,45 +368,50 @@ func TestPublishFooterVariant(t *testing.T) {
 }
 
 func TestFooters_Errors(t *testing.T) {
-	calls := map[string]func(c *Client) error{
-		"ListFooters": func(c *Client) error {
+	ops := []struct {
+		name          string
+		successStatus int
+		call          func(c *Client) error
+	}{
+		{"ListFooters", http.StatusOK, func(c *Client) error {
 			_, _, err := c.ListFooters(PaginationParams{})
 			return err
-		},
-		"CreateFooter": func(c *Client) error {
+		}},
+		{"CreateFooter", http.StatusCreated, func(c *Client) error {
 			_, err := c.CreateFooter(CreateFooterRequest{})
 			return err
-		},
-		"GetFooter": func(c *Client) error {
+		}},
+		{"GetFooter", http.StatusOK, func(c *Client) error {
 			_, err := c.GetFooter("ftr_1")
 			return err
-		},
-		"UpdateFooter": func(c *Client) error {
+		}},
+		{"UpdateFooter", http.StatusOK, func(c *Client) error {
 			_, err := c.UpdateFooter("ftr_1", UpdateFooterRequest{Name: "n"})
 			return err
-		},
-		"DeleteFooter": func(c *Client) error {
+		}},
+		{"DeleteFooter", http.StatusNoContent, func(c *Client) error {
 			return c.DeleteFooter("ftr_1")
-		},
-		"SetDefaultFooter": func(c *Client) error {
+		}},
+		{"SetDefaultFooter", http.StatusOK, func(c *Client) error {
 			_, err := c.SetDefaultFooter("ftr_1", SetDefaultFooterRequest{ExistingEmails: FooterExistingEmailsAll})
 			return err
-		},
-		"GetFooterVariant": func(c *Client) error {
+		}},
+		{"GetFooterVariant", http.StatusOK, func(c *Client) error {
 			_, err := c.GetFooterVariant("ftr_1", "var_1")
 			return err
-		},
-		"UpdateFooterVariant": func(c *Client) error {
+		}},
+		{"UpdateFooterVariant", http.StatusOK, func(c *Client) error {
 			_, err := c.UpdateFooterVariant("ftr_1", "var_1", UpdateFooterVariantRequest{})
 			return err
-		},
-		"PublishFooterVariant": func(c *Client) error {
+		}},
+		{"PublishFooterVariant", http.StatusOK, func(c *Client) error {
 			_, err := c.PublishFooterVariant("ftr_1", "var_1", PublishFooterVariantRequest{})
 			return err
-		},
+		}},
 	}
 
-	for name, call := range calls {
+	for _, op := range ops {
+		name, call := op.name, op.call
 		t.Run(name+"/api error", func(t *testing.T) {
 			client, _ := newFooterServer(t, http.StatusConflict,
 				`{"message":"3 emails use the footer. Change their footer before you delete it.","emailCount":3}`)
@@ -396,11 +429,11 @@ func TestFooters_Errors(t *testing.T) {
 			}
 		})
 
-		if name == "DeleteFooter" {
+		if op.successStatus == http.StatusNoContent {
 			continue
 		}
 		t.Run(name+"/invalid json", func(t *testing.T) {
-			client, _ := newFooterServer(t, http.StatusOK, `not json`)
+			client, _ := newFooterServer(t, op.successStatus, `not json`)
 
 			err := call(client)
 			if err == nil || !strings.Contains(err.Error(), "failed to decode response") {

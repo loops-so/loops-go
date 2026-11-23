@@ -161,7 +161,7 @@ func (c *Client) CreateFooter(req CreateFooterRequest) (*FooterWithVariants, err
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+	if resp.StatusCode != http.StatusCreated {
 		return nil, errorFromResponse(resp)
 	}
 

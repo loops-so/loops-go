@@ -74,8 +74,9 @@ type LmxWarning struct {
 // supported for campaign emails.
 //
 // FooterID requires footers to be enabled for the team and applies only to
-// campaign and workflow emails. A nil FooterID selects the system default
-// footer.
+// campaign and workflow emails. Transactional emails and critical notices
+// have no footer. A nil FooterID that is selected in Set applies the system
+// default footer.
 type EmailMessageFields struct {
 	Subject                    string             `json:"subject,omitempty"`
 	PreviewText                string             `json:"previewText,omitempty"`
