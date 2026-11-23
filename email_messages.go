@@ -20,6 +20,9 @@ const EmailFormatPlain = "plain"
 // CampaignID and TransactionalID are mutually exclusive. At most one is
 // non-nil and identifies the parent. Both are nil for a workflow email
 // message.
+//
+// FooterID is the ID of the email's footer. It is nil when the email uses the
+// system default footer and when footers do not apply to the email.
 type EmailMessage struct {
 	ID                         string            `json:"id"`
 	CampaignID                 *string           `json:"campaignId,omitempty"`
@@ -39,6 +42,7 @@ type EmailMessage struct {
 	ContactPropertiesFallbacks map[string]string `json:"contactPropertiesFallbacks,omitempty"`
 	EventPropertiesFallbacks   map[string]string `json:"eventPropertiesFallbacks,omitempty"`
 	DataVariablesFallbacks     map[string]string `json:"dataVariablesFallbacks,omitempty"`
+	FooterID                   *string           `json:"footerId,omitempty"`
 	Warnings                   []LmxWarning      `json:"warnings,omitempty"`
 }
 
@@ -51,6 +55,9 @@ type EmailMessage struct {
 // For the *Fallbacks maps, a nil value in the map clears the fallback for
 // that key; a string value sets it. Each map is a full replacement of the
 // server-side map.
+//
+// A nil FooterID selected in Set is sent as JSON null and applies the system
+// default footer.
 //
 // ExpectedRevisionID is optional; if set, the update fails if the message's
 // current ContentRevisionID does not match (optimistic concurrency control).
@@ -150,8 +157,9 @@ func (c *Client) GetEmailMessage(id string) (*EmailMessage, error) {
 // fields selected in req.Set and returns its new state. See
 // [UpdateEmailMessageRequest] for the selection semantics. The API rejects
 // the update when the parent campaign is not a draft, when the email message
-// is the published email message of a transactional email, or when the
-// parent workflow is sending.
+// is the published email message of a transactional email, when the parent
+// workflow is sending, or when FooterID is not a published footer of the
+// team.
 func (c *Client) UpdateEmailMessage(id string, req UpdateEmailMessageRequest) (*EmailMessage, error) {
 	body := map[string]any{}
 	if req.Set["subject"] {
@@ -192,6 +200,9 @@ func (c *Client) UpdateEmailMessage(id string, req UpdateEmailMessageRequest) (*
 	}
 	if req.Set["dataVariablesFallbacks"] {
 		body["dataVariablesFallbacks"] = req.DataVariablesFallbacks
+	}
+	if req.Set["footerId"] {
+		body["footerId"] = req.FooterID
 	}
 	if req.ExpectedRevisionID != "" {
 		body["expectedRevisionId"] = req.ExpectedRevisionID

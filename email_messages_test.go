@@ -748,3 +748,95 @@ func TestGetEmailMessageGuardian(t *testing.T) {
 		})
 	}
 }
+
+func TestGetEmailMessage_FooterID(t *testing.T) {
+	tests := []struct {
+		name string
+		body string
+		want *string
+	}{
+		{name: "footer id", body: `{"id":"em_abc123","footerId":"ftr_1"}`, want: ptr("ftr_1")},
+		{name: "null", body: `{"id":"em_abc123","footerId":null}`},
+		{name: "absent", body: `{"id":"em_abc123"}`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Write([]byte(tt.body))
+			}))
+			defer server.Close()
+
+			client := NewClient("test-key", WithBaseURL(server.URL))
+			result, err := client.GetEmailMessage("em_abc123")
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if tt.want == nil {
+				if result.FooterID != nil {
+					t.Errorf("FooterID = %q, want nil", *result.FooterID)
+				}
+				return
+			}
+			if result.FooterID == nil || *result.FooterID != *tt.want {
+				t.Errorf("FooterID = %v, want %q", result.FooterID, *tt.want)
+			}
+		})
+	}
+}
+
+func TestUpdateEmailMessage_FooterID(t *testing.T) {
+	tests := []struct {
+		name        string
+		req         UpdateEmailMessageRequest
+		wantPresent bool
+		want        any
+	}{
+		{
+			name: "footer id sent when set",
+			req: UpdateEmailMessageRequest{
+				EmailMessageFields: EmailMessageFields{FooterID: ptr("ftr_1")},
+				Set:                map[string]bool{"footerId": true},
+			},
+			wantPresent: true,
+			want:        "ftr_1",
+		},
+		{
+			name:        "nil sent as null when set",
+			req:         UpdateEmailMessageRequest{Set: map[string]bool{"footerId": true}},
+			wantPresent: true,
+		},
+		{
+			name: "omitted when not set",
+			req: UpdateEmailMessageRequest{
+				EmailMessageFields: EmailMessageFields{Subject: "Hi", FooterID: ptr("ftr_1")},
+				Set:                map[string]bool{"subject": true},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var body map[string]any
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				b, _ := io.ReadAll(r.Body)
+				json.Unmarshal(b, &body)
+				w.Write([]byte(updateEmailMessageResponse))
+			}))
+			defer server.Close()
+
+			client := NewClient("test-key", WithBaseURL(server.URL))
+			if _, err := client.UpdateEmailMessage("em_abc123", tt.req); err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			got, present := body["footerId"]
+			if present != tt.wantPresent {
+				t.Fatalf("footerId present = %v, want %v", present, tt.wantPresent)
+			}
+			if got != tt.want {
+				t.Errorf("footerId = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

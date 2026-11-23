@@ -67,6 +67,7 @@ client := loops.NewClient("YOUR_API_KEY",
 - Campaign groups — `CreateCampaignGroup`, `GetCampaignGroup`, `UpdateCampaignGroup`, `ListCampaignGroups`
 - Components — `GetComponent`, `ListComponents`, `CreateComponent`, `UpdateComponent`
 - Themes — `GetTheme`, `ListThemes`, `CreateTheme`, `UpdateTheme`
+- Footers — `ListFooters`, `CreateFooter`, `GetFooter`, `UpdateFooter`, `DeleteFooter`, `SetDefaultFooter`, `GetFooterVariant`, `UpdateFooterVariant`, `PublishFooterVariant`
 - Uploads — `Upload`, `CreateUpload`, `CompleteUpload`
 - Workflow groups — `CreateWorkflowGroup`, `GetWorkflowGroup`, `UpdateWorkflowGroup`, `ListWorkflowGroups`
 - Workflows — `ListWorkflows`, `GetWorkflow`, `GetWorkflowNode`, `CreateWorkflow`, `UpdateWorkflow`, `DeleteWorkflow`, `ChangeWorkflowMailingList`, `CreateWorkflowNode`, `UpdateWorkflowNode`, `AddWorkflowBranch`, `RerouteNodeConnection`, `DeleteWorkflowNode`, `DeleteWorkflowNodeRecursive`, `GetWorkflowNodeMetrics`
