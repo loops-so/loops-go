@@ -72,6 +72,10 @@ type LmxWarning struct {
 //
 // CCEmail and BCCEmail require CC/BCC to be enabled for the team and are not
 // supported for campaign emails.
+//
+// FooterID requires footers to be enabled for the team and applies only to
+// campaign and workflow emails. A nil FooterID selects the system default
+// footer.
 type EmailMessageFields struct {
 	Subject                    string             `json:"subject,omitempty"`
 	PreviewText                string             `json:"previewText,omitempty"`
@@ -86,6 +90,7 @@ type EmailMessageFields struct {
 	ContactPropertiesFallbacks map[string]*string `json:"contactPropertiesFallbacks,omitempty"`
 	EventPropertiesFallbacks   map[string]*string `json:"eventPropertiesFallbacks,omitempty"`
 	DataVariablesFallbacks     map[string]*string `json:"dataVariablesFallbacks,omitempty"`
+	FooterID                   *string            `json:"footerId,omitempty"`
 }
 
 // CreateCampaignRequest is the request body for [Client.CreateCampaign].
