@@ -2,6 +2,7 @@ package loops
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -40,13 +41,13 @@ type UpdateComponentResult struct {
 }
 
 // CreateComponent creates a new component.
-func (c *Client) CreateComponent(req CreateComponentRequest) (*Component, error) {
+func (c *Client) CreateComponent(ctx context.Context, req CreateComponentRequest) (*Component, error) {
 	b, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode request: %w", err)
 	}
 
-	httpReq, err := c.newRequest(http.MethodPost, "/components", bytes.NewReader(b))
+	httpReq, err := c.newRequest(ctx, http.MethodPost, "/components", bytes.NewReader(b))
 	if err != nil {
 		return nil, err
 	}
@@ -70,13 +71,13 @@ func (c *Client) CreateComponent(req CreateComponentRequest) (*Component, error)
 }
 
 // UpdateComponent updates the component identified by id.
-func (c *Client) UpdateComponent(id string, req UpdateComponentRequest) (*UpdateComponentResult, error) {
+func (c *Client) UpdateComponent(ctx context.Context, id string, req UpdateComponentRequest) (*UpdateComponentResult, error) {
 	b, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode request: %w", err)
 	}
 
-	httpReq, err := c.newRequest(http.MethodPost, "/components/"+id, bytes.NewReader(b))
+	httpReq, err := c.newRequest(ctx, http.MethodPost, "/components/"+id, bytes.NewReader(b))
 	if err != nil {
 		return nil, err
 	}
@@ -100,8 +101,8 @@ func (c *Client) UpdateComponent(id string, req UpdateComponentRequest) (*Update
 }
 
 // GetComponent returns the component identified by id.
-func (c *Client) GetComponent(id string) (*Component, error) {
-	req, err := c.newRequest(http.MethodGet, "/components/"+id, nil)
+func (c *Client) GetComponent(ctx context.Context, id string) (*Component, error) {
+	req, err := c.newRequest(ctx, http.MethodGet, "/components/"+id, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +127,7 @@ func (c *Client) GetComponent(id string) (*Component, error) {
 
 // ListComponents returns a single page of components along with pagination
 // information. To iterate every page, use [Paginate].
-func (c *Client) ListComponents(params PaginationParams) ([]Component, *Pagination, error) {
+func (c *Client) ListComponents(ctx context.Context, params PaginationParams) ([]Component, *Pagination, error) {
 	q := url.Values{}
 	if params.PerPage != "" {
 		q.Set("perPage", params.PerPage)
@@ -140,7 +141,7 @@ func (c *Client) ListComponents(params PaginationParams) ([]Component, *Paginati
 		path += "?" + q.Encode()
 	}
 
-	req, err := c.newRequest(http.MethodGet, path, nil)
+	req, err := c.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, nil, err
 	}

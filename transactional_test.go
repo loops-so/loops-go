@@ -1,6 +1,7 @@
 package loops
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -85,7 +86,7 @@ func TestListTransactional(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			emails, pagination, err := client.ListTransactional(PaginationParams{})
+			emails, pagination, err := client.ListTransactional(context.Background(), PaginationParams{})
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -132,7 +133,7 @@ func TestListTransactional_ResponseData(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	emails, pagination, err := client.ListTransactional(PaginationParams{})
+	emails, pagination, err := client.ListTransactional(context.Background(), PaginationParams{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -195,7 +196,7 @@ func TestListTransactional_QueryParams(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			client.ListTransactional(tt.params)
+			client.ListTransactional(context.Background(), tt.params)
 
 			if gotPerPage != tt.wantPerPage {
 				t.Errorf("perPage = %q, want %q", gotPerPage, tt.wantPerPage)
@@ -249,7 +250,7 @@ func TestSendTransactional(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			err := client.SendTransactional(SendTransactionalRequest{
+			err := client.SendTransactional(context.Background(), SendTransactionalRequest{
 				Email:           "test@example.com",
 				TransactionalID: "abc123",
 			})
@@ -317,7 +318,7 @@ func TestSendTransactional_IdempotencyKey(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			client.SendTransactional(SendTransactionalRequest{
+			client.SendTransactional(context.Background(), SendTransactionalRequest{
 				Email:           "a@b.com",
 				TransactionalID: "abc",
 				IdempotencyKey:  tt.idempotencyKey,
@@ -377,7 +378,7 @@ func TestSendTransactional_RequestBody(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			client.SendTransactional(tt.req)
+			client.SendTransactional(context.Background(), tt.req)
 
 			if got.Email != tt.wantEmail {
 				t.Errorf("email = %q, want %q", got.Email, tt.wantEmail)

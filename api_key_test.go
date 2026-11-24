@@ -1,6 +1,7 @@
 package loops
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -54,7 +55,7 @@ func TestGetAPIKey(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			result, err := client.GetAPIKey()
+			result, err := client.GetAPIKey(context.Background())
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError

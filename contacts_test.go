@@ -1,6 +1,7 @@
 package loops
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -116,7 +117,7 @@ func TestCreateContact(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			id, err := client.CreateContact(tt.req)
+			id, err := client.CreateContact(context.Background(), tt.req)
 
 			if tt.wantBody != nil {
 				for k, v := range tt.wantBody {
@@ -211,7 +212,7 @@ func TestDeleteContact(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			err := client.DeleteContact(tt.email, tt.userID)
+			err := client.DeleteContact(context.Background(), tt.email, tt.userID)
 
 			if tt.wantBody != nil {
 				for k, v := range tt.wantBody {
@@ -329,7 +330,7 @@ func TestUpdateContact(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			err := client.UpdateContact(tt.req)
+			err := client.UpdateContact(context.Background(), tt.req)
 
 			if tt.wantBody != nil {
 				for k, v := range tt.wantBody {
@@ -439,7 +440,7 @@ func TestCheckContactSuppression(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			result, err := client.CheckContactSuppression(tt.email, tt.userID)
+			result, err := client.CheckContactSuppression(context.Background(), tt.email, tt.userID)
 
 			if tt.wantQuery != "" && gotQuery != tt.wantQuery {
 				t.Errorf("query = %q, want %q", gotQuery, tt.wantQuery)
@@ -555,7 +556,7 @@ func TestRemoveContactSuppression(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			result, err := client.RemoveContactSuppression(tt.email, tt.userID)
+			result, err := client.RemoveContactSuppression(context.Background(), tt.email, tt.userID)
 
 			if tt.wantQuery != "" && gotQuery != tt.wantQuery {
 				t.Errorf("query = %q, want %q", gotQuery, tt.wantQuery)
@@ -656,7 +657,7 @@ func TestFindContacts(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			contacts, err := client.FindContacts(tt.params)
+			contacts, err := client.FindContacts(context.Background(), tt.params)
 
 			if tt.wantQuery != "" && gotQuery != tt.wantQuery {
 				t.Errorf("query = %q, want %q", gotQuery, tt.wantQuery)

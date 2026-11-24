@@ -1,6 +1,7 @@
 package loops
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -95,7 +96,7 @@ func TestGetEventPattern(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			result, err := client.GetEventPattern(tt.id)
+			result, err := client.GetEventPattern(context.Background(), tt.id)
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -154,7 +155,7 @@ func TestGetEventPattern_CustomEvent(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	result, err := client.GetEventPattern("evp_custom")
+	result, err := client.GetEventPattern(context.Background(), "evp_custom")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -210,7 +211,7 @@ func TestGetEventPatternByName(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			result, err := client.GetEventPatternByName(tt.eventName)
+			result, err := client.GetEventPatternByName(context.Background(), tt.eventName)
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -288,7 +289,7 @@ func TestListEventPatterns(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			patterns, pagination, err := client.ListEventPatterns(PaginationParams{})
+			patterns, pagination, err := client.ListEventPatterns(context.Background(), PaginationParams{})
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -338,7 +339,7 @@ func TestListEventPatterns_ResponseData(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	patterns, _, err := client.ListEventPatterns(PaginationParams{})
+	patterns, _, err := client.ListEventPatterns(context.Background(), PaginationParams{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -388,7 +389,7 @@ func TestListEventPatterns_QueryParams(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			client.ListEventPatterns(tt.params)
+			client.ListEventPatterns(context.Background(), tt.params)
 
 			if gotPerPage != tt.wantPerPage {
 				t.Errorf("perPage = %q, want %q", gotPerPage, tt.wantPerPage)

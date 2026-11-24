@@ -2,6 +2,7 @@ package loops
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -711,7 +712,7 @@ type ListWorkflowsParams struct {
 
 // ListWorkflows returns a single page of workflow summaries along with
 // pagination information. To iterate every page, use [Paginate].
-func (c *Client) ListWorkflows(params ListWorkflowsParams) ([]WorkflowSummary, *Pagination, error) {
+func (c *Client) ListWorkflows(ctx context.Context, params ListWorkflowsParams) ([]WorkflowSummary, *Pagination, error) {
 	q := url.Values{}
 	if params.PerPage != "" {
 		q.Set("perPage", params.PerPage)
@@ -728,7 +729,7 @@ func (c *Client) ListWorkflows(params ListWorkflowsParams) ([]WorkflowSummary, *
 		path += "?" + q.Encode()
 	}
 
-	req, err := c.newRequest(http.MethodGet, path, nil)
+	req, err := c.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -755,8 +756,8 @@ func (c *Client) ListWorkflows(params ListWorkflowsParams) ([]WorkflowSummary, *
 }
 
 // GetWorkflow returns the simplified workflow graph identified by id.
-func (c *Client) GetWorkflow(id string) (*SimplifiedWorkflow, error) {
-	req, err := c.newRequest(http.MethodGet, "/workflows/"+id, nil)
+func (c *Client) GetWorkflow(ctx context.Context, id string) (*SimplifiedWorkflow, error) {
+	req, err := c.newRequest(ctx, http.MethodGet, "/workflows/"+id, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -816,8 +817,8 @@ func (n WorkflowNodeWithRevision) MarshalJSON() ([]byte, error) {
 // with the current workflow revision token. The result is a
 // [WorkflowNodeWithRevision]; the node fields remain accessible via the
 // embedded [WorkflowNode].
-func (c *Client) GetWorkflowNode(workflowID, nodeID string) (*WorkflowNodeWithRevision, error) {
-	req, err := c.newRequest(http.MethodGet, "/workflows/"+workflowID+"/nodes/"+nodeID, nil)
+func (c *Client) GetWorkflowNode(ctx context.Context, workflowID, nodeID string) (*WorkflowNodeWithRevision, error) {
+	req, err := c.newRequest(ctx, http.MethodGet, "/workflows/"+workflowID+"/nodes/"+nodeID, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -845,8 +846,8 @@ func (c *Client) GetWorkflowNode(workflowID, nodeID string) (*WorkflowNodeWithRe
 // workflowID. The server responds with a 400 error for nodes of any other
 // type or for a node with no email message. A SendEmailAction node that has
 // not sent anything yet reports every counter as 0.
-func (c *Client) GetWorkflowNodeMetrics(workflowID, nodeID string) (*EmailMetrics, error) {
-	req, err := c.newRequest(http.MethodGet, "/workflows/"+workflowID+"/nodes/"+nodeID+"/metrics", nil)
+func (c *Client) GetWorkflowNodeMetrics(ctx context.Context, workflowID, nodeID string) (*EmailMetrics, error) {
+	req, err := c.newRequest(ctx, http.MethodGet, "/workflows/"+workflowID+"/nodes/"+nodeID+"/metrics", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1197,13 +1198,13 @@ type CreateWorkflowRequest struct {
 }
 
 // CreateWorkflow creates a new workflow and returns it.
-func (c *Client) CreateWorkflow(req CreateWorkflowRequest) (*SimplifiedWorkflow, error) {
+func (c *Client) CreateWorkflow(ctx context.Context, req CreateWorkflowRequest) (*SimplifiedWorkflow, error) {
 	b, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode request: %w", err)
 	}
 
-	httpReq, err := c.newRequest(http.MethodPost, "/workflows", bytes.NewReader(b))
+	httpReq, err := c.newRequest(ctx, http.MethodPost, "/workflows", bytes.NewReader(b))
 	if err != nil {
 		return nil, err
 	}
@@ -1241,7 +1242,7 @@ type UpdateWorkflowPropertiesRequest struct {
 
 // UpdateWorkflow updates the name, description, and/or group of the workflow
 // identified by id and returns its new state.
-func (c *Client) UpdateWorkflow(id string, req UpdateWorkflowPropertiesRequest) (*SimplifiedWorkflow, error) {
+func (c *Client) UpdateWorkflow(ctx context.Context, id string, req UpdateWorkflowPropertiesRequest) (*SimplifiedWorkflow, error) {
 	body := map[string]any{
 		"expectedRevisionId": req.ExpectedRevisionID,
 	}
@@ -1260,7 +1261,7 @@ func (c *Client) UpdateWorkflow(id string, req UpdateWorkflowPropertiesRequest) 
 		return nil, fmt.Errorf("failed to encode request: %w", err)
 	}
 
-	httpReq, err := c.newRequest(http.MethodPost, "/workflows/"+id, bytes.NewReader(b))
+	httpReq, err := c.newRequest(ctx, http.MethodPost, "/workflows/"+id, bytes.NewReader(b))
 	if err != nil {
 		return nil, err
 	}
@@ -1329,7 +1330,7 @@ type ChangeWorkflowMailingListResponse struct {
 // identified by id. With the default "fail" policy (or DryRun), a response
 // whose Status is not "updated" reports the queued-contact impact instead of
 // applying the change.
-func (c *Client) ChangeWorkflowMailingList(id string, req ChangeWorkflowMailingListRequest) (*ChangeWorkflowMailingListResponse, error) {
+func (c *Client) ChangeWorkflowMailingList(ctx context.Context, id string, req ChangeWorkflowMailingListRequest) (*ChangeWorkflowMailingListResponse, error) {
 	body := map[string]any{
 		"expectedRevisionId": req.ExpectedRevisionID,
 		"mailingListId":      req.MailingListID,
@@ -1346,7 +1347,7 @@ func (c *Client) ChangeWorkflowMailingList(id string, req ChangeWorkflowMailingL
 		return nil, fmt.Errorf("failed to encode request: %w", err)
 	}
 
-	httpReq, err := c.newRequest(http.MethodPost, "/workflows/"+id+"/mailing-list", bytes.NewReader(b))
+	httpReq, err := c.newRequest(ctx, http.MethodPost, "/workflows/"+id+"/mailing-list", bytes.NewReader(b))
 	if err != nil {
 		return nil, err
 	}
@@ -1420,7 +1421,7 @@ type CreateWorkflowNodeResponse struct {
 // CreateWorkflowNode creates a node in the workflow identified by id and
 // returns the created node together with the updated workflow. Configure the
 // node afterwards with [Client.UpdateWorkflowNode].
-func (c *Client) CreateWorkflowNode(id string, req CreateWorkflowNodeRequest) (*CreateWorkflowNodeResponse, error) {
+func (c *Client) CreateWorkflowNode(ctx context.Context, id string, req CreateWorkflowNodeRequest) (*CreateWorkflowNodeResponse, error) {
 	body := map[string]any{
 		"expectedRevisionId": req.ExpectedRevisionID,
 		"insertMode":         req.InsertMode,
@@ -1445,7 +1446,7 @@ func (c *Client) CreateWorkflowNode(id string, req CreateWorkflowNodeRequest) (*
 		return nil, fmt.Errorf("failed to encode request: %w", err)
 	}
 
-	httpReq, err := c.newRequest(http.MethodPost, "/workflows/"+id+"/nodes", bytes.NewReader(b))
+	httpReq, err := c.newRequest(ctx, http.MethodPost, "/workflows/"+id+"/nodes", bytes.NewReader(b))
 	if err != nil {
 		return nil, err
 	}
@@ -1613,7 +1614,7 @@ func (n UpdateWorkflowNodeResponse) MarshalJSON() ([]byte, error) {
 // UpdateWorkflowNode applies req.Payload to the node identified by
 // workflowID/nodeID and returns the updated node. The API rejects the update
 // while the workflow is sending.
-func (c *Client) UpdateWorkflowNode(workflowID, nodeID string, req UpdateWorkflowNodeRequest) (*UpdateWorkflowNodeResponse, error) {
+func (c *Client) UpdateWorkflowNode(ctx context.Context, workflowID, nodeID string, req UpdateWorkflowNodeRequest) (*UpdateWorkflowNodeResponse, error) {
 	body := map[string]any{
 		"expectedRevisionId": req.ExpectedRevisionID,
 		"payload":            req.Payload,
@@ -1624,7 +1625,7 @@ func (c *Client) UpdateWorkflowNode(workflowID, nodeID string, req UpdateWorkflo
 		return nil, fmt.Errorf("failed to encode request: %w", err)
 	}
 
-	httpReq, err := c.newRequest(http.MethodPost, "/workflows/"+workflowID+"/nodes/"+nodeID, bytes.NewReader(b))
+	httpReq, err := c.newRequest(ctx, http.MethodPost, "/workflows/"+workflowID+"/nodes/"+nodeID, bytes.NewReader(b))
 	if err != nil {
 		return nil, err
 	}
@@ -1661,7 +1662,7 @@ type AddWorkflowBranchResponse struct {
 
 // AddWorkflowBranch adds a branch to the branch node identified by
 // workflowID/nodeID and returns the updated node and workflow.
-func (c *Client) AddWorkflowBranch(workflowID, nodeID string, req AddWorkflowBranchRequest) (*AddWorkflowBranchResponse, error) {
+func (c *Client) AddWorkflowBranch(ctx context.Context, workflowID, nodeID string, req AddWorkflowBranchRequest) (*AddWorkflowBranchResponse, error) {
 	body := map[string]any{
 		"expectedRevisionId": req.ExpectedRevisionID,
 	}
@@ -1671,7 +1672,7 @@ func (c *Client) AddWorkflowBranch(workflowID, nodeID string, req AddWorkflowBra
 		return nil, fmt.Errorf("failed to encode request: %w", err)
 	}
 
-	httpReq, err := c.newRequest(http.MethodPost, "/workflows/"+workflowID+"/nodes/"+nodeID+"/add-branch", bytes.NewReader(b))
+	httpReq, err := c.newRequest(ctx, http.MethodPost, "/workflows/"+workflowID+"/nodes/"+nodeID+"/add-branch", bytes.NewReader(b))
 	if err != nil {
 		return nil, err
 	}
@@ -1716,7 +1717,7 @@ type DeleteWorkflowNodeResponse struct {
 	Workflow           *SimplifiedWorkflow `json:"workflow,omitempty"`
 }
 
-func (c *Client) deleteWorkflowNode(path string, req DeleteWorkflowNodeRequest) (*DeleteWorkflowNodeResponse, error) {
+func (c *Client) deleteWorkflowNode(ctx context.Context, path string, req DeleteWorkflowNodeRequest) (*DeleteWorkflowNodeResponse, error) {
 	body := map[string]any{
 		"expectedRevisionId": req.ExpectedRevisionID,
 	}
@@ -1732,7 +1733,7 @@ func (c *Client) deleteWorkflowNode(path string, req DeleteWorkflowNodeRequest) 
 		return nil, fmt.Errorf("failed to encode request: %w", err)
 	}
 
-	httpReq, err := c.newRequest(http.MethodDelete, path, bytes.NewReader(b))
+	httpReq, err := c.newRequest(ctx, http.MethodDelete, path, bytes.NewReader(b))
 	if err != nil {
 		return nil, err
 	}
@@ -1759,15 +1760,15 @@ func (c *Client) deleteWorkflowNode(path string, req DeleteWorkflowNodeRequest) 
 // default "fail" policy (or DryRun), a response whose Status is not "deleted"
 // reports the queued-contact impact instead of applying the deletion. The API
 // rejects the deletion while the workflow is sending.
-func (c *Client) DeleteWorkflowNode(workflowID, nodeID string, req DeleteWorkflowNodeRequest) (*DeleteWorkflowNodeResponse, error) {
-	return c.deleteWorkflowNode("/workflows/"+workflowID+"/nodes/"+nodeID, req)
+func (c *Client) DeleteWorkflowNode(ctx context.Context, workflowID, nodeID string, req DeleteWorkflowNodeRequest) (*DeleteWorkflowNodeResponse, error) {
+	return c.deleteWorkflowNode(ctx, "/workflows/"+workflowID+"/nodes/"+nodeID, req)
 }
 
 // DeleteWorkflowNodeRecursive deletes the node identified by workflowID/nodeID
 // along with its downstream nodes. Semantics otherwise match
 // [Client.DeleteWorkflowNode].
-func (c *Client) DeleteWorkflowNodeRecursive(workflowID, nodeID string, req DeleteWorkflowNodeRequest) (*DeleteWorkflowNodeResponse, error) {
-	return c.deleteWorkflowNode("/workflows/"+workflowID+"/nodes/"+nodeID+"/recursive", req)
+func (c *Client) DeleteWorkflowNodeRecursive(ctx context.Context, workflowID, nodeID string, req DeleteWorkflowNodeRequest) (*DeleteWorkflowNodeResponse, error) {
+	return c.deleteWorkflowNode(ctx, "/workflows/"+workflowID+"/nodes/"+nodeID+"/recursive", req)
 }
 
 // ErrWorkflowDeleteConfirmationRequired is wrapped into the error returned by
@@ -1798,7 +1799,7 @@ type DeleteWorkflowRequest struct {
 // delete the workflow, stop sending it, and cancel its queued contacts.
 //
 // A stale ExpectedRevisionID also fails with a 409, as a plain *[APIError].
-func (c *Client) DeleteWorkflow(id string, req DeleteWorkflowRequest) error {
+func (c *Client) DeleteWorkflow(ctx context.Context, id string, req DeleteWorkflowRequest) error {
 	body := map[string]any{
 		"expectedRevisionId": req.ExpectedRevisionID,
 	}
@@ -1811,7 +1812,7 @@ func (c *Client) DeleteWorkflow(id string, req DeleteWorkflowRequest) error {
 		return fmt.Errorf("failed to encode request: %w", err)
 	}
 
-	httpReq, err := c.newRequest(http.MethodDelete, "/workflows/"+id, bytes.NewReader(b))
+	httpReq, err := c.newRequest(ctx, http.MethodDelete, "/workflows/"+id, bytes.NewReader(b))
 	if err != nil {
 		return err
 	}
@@ -1875,7 +1876,7 @@ func (n RerouteNodeConnectionResponse) MarshalJSON() ([]byte, error) {
 // identified by workflowID/nodeID to req.NewTargetNodeID, returning the updated
 // source node and the latest workflow. The source node must have exactly one
 // outgoing connection; branch and experiment branch nodes cannot be rerouted.
-func (c *Client) RerouteNodeConnection(workflowID, nodeID string, req RerouteNodeConnectionRequest) (*RerouteNodeConnectionResponse, error) {
+func (c *Client) RerouteNodeConnection(ctx context.Context, workflowID, nodeID string, req RerouteNodeConnectionRequest) (*RerouteNodeConnectionResponse, error) {
 	body := map[string]any{
 		"expectedRevisionId": req.ExpectedRevisionID,
 		"newTargetNodeId":    req.NewTargetNodeID,
@@ -1886,7 +1887,7 @@ func (c *Client) RerouteNodeConnection(workflowID, nodeID string, req RerouteNod
 		return nil, fmt.Errorf("failed to encode request: %w", err)
 	}
 
-	httpReq, err := c.newRequest(http.MethodPost, "/workflows/"+workflowID+"/nodes/"+nodeID+"/reroute", bytes.NewReader(b))
+	httpReq, err := c.newRequest(ctx, http.MethodPost, "/workflows/"+workflowID+"/nodes/"+nodeID+"/reroute", bytes.NewReader(b))
 	if err != nil {
 		return nil, err
 	}

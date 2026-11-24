@@ -24,7 +24,7 @@ type PaginationParams struct {
 // [Client.ListTransactionals] and [Client.ListCampaigns]:
 //
 //	all, err := loops.Paginate(func(cursor string) ([]loops.Transactional, *loops.Pagination, error) {
-//	    return client.ListTransactionals(loops.ListTransactionalsParams{
+//	    return client.ListTransactionals(ctx, loops.ListTransactionalsParams{
 //	        PaginationParams: loops.PaginationParams{Cursor: cursor},
 //	    })
 //	})

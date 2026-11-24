@@ -1,6 +1,7 @@
 package loops
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -15,8 +16,8 @@ type APIKeyResponse struct {
 
 // GetAPIKey verifies the client's API key and returns information about the
 // team it belongs to. Useful as a connectivity check at startup.
-func (c *Client) GetAPIKey() (*APIKeyResponse, error) {
-	req, err := c.newRequest(http.MethodGet, "/api-key", nil)
+func (c *Client) GetAPIKey(ctx context.Context) (*APIKeyResponse, error) {
+	req, err := c.newRequest(ctx, http.MethodGet, "/api-key", nil)
 	if err != nil {
 		return nil, err
 	}

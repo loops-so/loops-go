@@ -2,6 +2,7 @@ package loops
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -192,8 +193,8 @@ func (c *AudienceFilterCondition) UnmarshalJSON(data []byte) error {
 }
 
 // GetAudienceSegment returns the audience segment identified by id.
-func (c *Client) GetAudienceSegment(id string) (*AudienceSegment, error) {
-	req, err := c.newRequest(http.MethodGet, "/audience-segments/"+id, nil)
+func (c *Client) GetAudienceSegment(ctx context.Context, id string) (*AudienceSegment, error) {
+	req, err := c.newRequest(ctx, http.MethodGet, "/audience-segments/"+id, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -226,13 +227,13 @@ type CreateAudienceSegmentRequest struct {
 }
 
 // CreateAudienceSegment creates a new audience segment and returns it.
-func (c *Client) CreateAudienceSegment(req CreateAudienceSegmentRequest) (*AudienceSegment, error) {
+func (c *Client) CreateAudienceSegment(ctx context.Context, req CreateAudienceSegmentRequest) (*AudienceSegment, error) {
 	b, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode request: %w", err)
 	}
 
-	httpReq, err := c.newRequest(http.MethodPost, "/audience-segments", bytes.NewReader(b))
+	httpReq, err := c.newRequest(ctx, http.MethodPost, "/audience-segments", bytes.NewReader(b))
 	if err != nil {
 		return nil, err
 	}
@@ -257,7 +258,7 @@ func (c *Client) CreateAudienceSegment(req CreateAudienceSegmentRequest) (*Audie
 
 // ListAudienceSegments returns a single page of audience segments along with
 // pagination information. To iterate every page, use [Paginate].
-func (c *Client) ListAudienceSegments(params PaginationParams) ([]AudienceSegment, *Pagination, error) {
+func (c *Client) ListAudienceSegments(ctx context.Context, params PaginationParams) ([]AudienceSegment, *Pagination, error) {
 	q := url.Values{}
 	if params.PerPage != "" {
 		q.Set("perPage", params.PerPage)
@@ -271,7 +272,7 @@ func (c *Client) ListAudienceSegments(params PaginationParams) ([]AudienceSegmen
 		path += "?" + q.Encode()
 	}
 
-	req, err := c.newRequest(http.MethodGet, path, nil)
+	req, err := c.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, nil, err
 	}

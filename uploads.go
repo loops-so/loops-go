@@ -2,6 +2,7 @@ package loops
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -47,13 +48,13 @@ type UploadRequest struct {
 // successful PUT, call [Client.CompleteUpload] to finalize the asset. Most
 // callers should use [Client.Upload] instead, which performs all three
 // steps.
-func (c *Client) CreateUpload(req CreateUploadRequest) (*CreateUploadResponse, error) {
+func (c *Client) CreateUpload(ctx context.Context, req CreateUploadRequest) (*CreateUploadResponse, error) {
 	b, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode request: %w", err)
 	}
 
-	httpReq, err := c.newRequest(http.MethodPost, "/uploads", bytes.NewReader(b))
+	httpReq, err := c.newRequest(ctx, http.MethodPost, "/uploads", bytes.NewReader(b))
 	if err != nil {
 		return nil, err
 	}
@@ -82,8 +83,8 @@ func (c *Client) CreateUpload(req CreateUploadRequest) (*CreateUploadResponse, e
 // [Client.CompleteUpload]. The PUT to S3 deliberately does not carry the
 // Loops Authorization header. On success the returned FinalURL is the
 // public URL of the uploaded asset.
-func (c *Client) Upload(req UploadRequest) (*CompleteUploadResponse, error) {
-	created, err := c.CreateUpload(CreateUploadRequest{
+func (c *Client) Upload(ctx context.Context, req UploadRequest) (*CompleteUploadResponse, error) {
+	created, err := c.CreateUpload(ctx, CreateUploadRequest{
 		ContentType:   req.ContentType,
 		ContentLength: req.ContentLength,
 	})
@@ -91,7 +92,7 @@ func (c *Client) Upload(req UploadRequest) (*CompleteUploadResponse, error) {
 		return nil, err
 	}
 
-	putReq, err := http.NewRequest(http.MethodPut, created.PresignedURL, req.Body)
+	putReq, err := http.NewRequestWithContext(ctx, http.MethodPut, created.PresignedURL, req.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build upload request: %w", err)
 	}
@@ -108,14 +109,14 @@ func (c *Client) Upload(req UploadRequest) (*CompleteUploadResponse, error) {
 		return nil, fmt.Errorf("upload to presigned URL failed: status %d", putResp.StatusCode)
 	}
 
-	return c.CompleteUpload(created.EmailAssetID)
+	return c.CompleteUpload(ctx, created.EmailAssetID)
 }
 
 // CompleteUpload finalizes an asset previously created with
 // [Client.CreateUpload] after its bytes have been PUT to the presigned
 // URL. The id argument is the EmailAssetID returned by CreateUpload.
-func (c *Client) CompleteUpload(id string) (*CompleteUploadResponse, error) {
-	req, err := c.newRequest(http.MethodPost, "/uploads/"+id+"/complete", nil)
+func (c *Client) CompleteUpload(ctx context.Context, id string) (*CompleteUploadResponse, error) {
+	req, err := c.newRequest(ctx, http.MethodPost, "/uploads/"+id+"/complete", nil)
 	if err != nil {
 		return nil, err
 	}

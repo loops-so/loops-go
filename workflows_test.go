@@ -1,6 +1,7 @@
 package loops
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -81,7 +82,7 @@ func TestListWorkflows(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	workflows, pagination, err := client.ListWorkflows(ListWorkflowsParams{})
+	workflows, pagination, err := client.ListWorkflows(context.Background(), ListWorkflowsParams{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -142,7 +143,7 @@ func TestListWorkflows_QueryParams(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			if _, _, err := client.ListWorkflows(tt.params); err != nil {
+			if _, _, err := client.ListWorkflows(context.Background(), tt.params); err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
 			if gotPath != "/workflows" {
@@ -206,7 +207,7 @@ func TestGetWorkflow(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			result, err := client.GetWorkflow(tt.id)
+			result, err := client.GetWorkflow(context.Background(), tt.id)
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -325,7 +326,7 @@ func TestGetWorkflowNode_EventTrigger(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	node, err := client.GetWorkflowNode("wf_1", "node_evt")
+	node, err := client.GetWorkflowNode(context.Background(), "wf_1", "node_evt")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -371,7 +372,7 @@ func TestGetWorkflowNode_ContactPropertyTrigger_NullQuery(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	node, err := client.GetWorkflowNode("wf_1", "node_cp")
+	node, err := client.GetWorkflowNode(context.Background(), "wf_1", "node_cp")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -403,7 +404,7 @@ func TestGetWorkflowNode_ContactPropertyTrigger_WithQuery(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	node, err := client.GetWorkflowNode("wf_1", "node_cp")
+	node, err := client.GetWorkflowNode(context.Background(), "wf_1", "node_cp")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -441,7 +442,7 @@ func TestGetWorkflowNode_TimerAction(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	node, err := client.GetWorkflowNode("wf_1", "node_t")
+	node, err := client.GetWorkflowNode(context.Background(), "wf_1", "node_t")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -478,7 +479,7 @@ func TestGetWorkflowNode_AudienceFilter(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	node, err := client.GetWorkflowNode("wf_1", "node_af")
+	node, err := client.GetWorkflowNode(context.Background(), "wf_1", "node_af")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -614,7 +615,7 @@ func TestCreateWorkflow(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	wf, err := client.CreateWorkflow(CreateWorkflowRequest{
+	wf, err := client.CreateWorkflow(context.Background(), CreateWorkflowRequest{
 		Name:            "New flow",
 		Description:     "desc",
 		MailingListID:   ptr("ml_1"),
@@ -657,7 +658,7 @@ func TestUpdateWorkflow_NullRevision(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	wf, err := client.UpdateWorkflow("wf_1", UpdateWorkflowPropertiesRequest{
+	wf, err := client.UpdateWorkflow(context.Background(), "wf_1", UpdateWorkflowPropertiesRequest{
 		ExpectedRevisionID: nil,
 		Name:               "Renamed",
 	})
@@ -694,7 +695,7 @@ func TestUpdateWorkflow_MoveToGroup(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	wf, err := client.UpdateWorkflow("wf_1", UpdateWorkflowPropertiesRequest{
+	wf, err := client.UpdateWorkflow(context.Background(), "wf_1", UpdateWorkflowPropertiesRequest{
 		ExpectedRevisionID: ptr("rev_1"),
 		WorkflowGroupID:    "grp_2",
 	})
@@ -720,7 +721,7 @@ func TestUpdateWorkflow_GroupNotFound400(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	_, err := client.UpdateWorkflow("wf_1", UpdateWorkflowPropertiesRequest{
+	_, err := client.UpdateWorkflow(context.Background(), "wf_1", UpdateWorkflowPropertiesRequest{
 		ExpectedRevisionID: ptr("rev_1"),
 		WorkflowGroupID:    "grp_missing",
 	})
@@ -741,7 +742,7 @@ func TestUpdateWorkflow_StaleRevision409(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	_, err := client.UpdateWorkflow("wf_1", UpdateWorkflowPropertiesRequest{
+	_, err := client.UpdateWorkflow(context.Background(), "wf_1", UpdateWorkflowPropertiesRequest{
 		ExpectedRevisionID: ptr("old_rev"),
 		Name:               "x",
 	})
@@ -770,7 +771,7 @@ func TestChangeWorkflowMailingList_Preview(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	res, err := client.ChangeWorkflowMailingList("wf_1", ChangeWorkflowMailingListRequest{
+	res, err := client.ChangeWorkflowMailingList(context.Background(), "wf_1", ChangeWorkflowMailingListRequest{
 		ExpectedRevisionID: ptr("rev_1"),
 		MailingListID:      ptr("ml_2"),
 	})
@@ -811,7 +812,7 @@ func TestChangeWorkflowMailingList_NullClear(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	res, err := client.ChangeWorkflowMailingList("wf_1", ChangeWorkflowMailingListRequest{
+	res, err := client.ChangeWorkflowMailingList(context.Background(), "wf_1", ChangeWorkflowMailingListRequest{
 		ExpectedRevisionID:  ptr("rev_2"),
 		MailingListID:       nil,
 		DryRun:              true,
@@ -866,7 +867,7 @@ func TestCreateWorkflowNode_Between(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	res, err := client.CreateWorkflowNode("wf_1", CreateWorkflowNodeRequest{
+	res, err := client.CreateWorkflowNode(context.Background(), "wf_1", CreateWorkflowNodeRequest{
 		ExpectedRevisionID: ptr("rev_4"),
 		InsertMode:         WorkflowInsertModeBetween,
 		NodeTypeName:       CreateWorkflowNodeTypeBranchNode,
@@ -920,7 +921,7 @@ func TestCreateWorkflowNode_Before_NullRevision(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	res, err := client.CreateWorkflowNode("wf_1", CreateWorkflowNodeRequest{
+	res, err := client.CreateWorkflowNode(context.Background(), "wf_1", CreateWorkflowNodeRequest{
 		ExpectedRevisionID: nil,
 		InsertMode:         WorkflowInsertModeBefore,
 		NodeTypeName:       CreateWorkflowNodeTypeTimerAction,
@@ -960,7 +961,7 @@ func TestCreateWorkflowNode_Before_ToNodeID(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	_, err := client.CreateWorkflowNode("wf_1", CreateWorkflowNodeRequest{
+	_, err := client.CreateWorkflowNode(context.Background(), "wf_1", CreateWorkflowNodeRequest{
 		ExpectedRevisionID: ptr("rev_0"),
 		InsertMode:         WorkflowInsertModeBefore,
 		NodeTypeName:       CreateWorkflowNodeTypeTimerAction,
@@ -997,7 +998,7 @@ func TestCreateWorkflowNode_After(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	res, err := client.CreateWorkflowNode("wf_1", CreateWorkflowNodeRequest{
+	res, err := client.CreateWorkflowNode(context.Background(), "wf_1", CreateWorkflowNodeRequest{
 		ExpectedRevisionID: ptr("rev_0"),
 		InsertMode:         WorkflowInsertModeAfter,
 		NodeTypeName:       CreateWorkflowNodeTypeTimerAction,
@@ -1043,7 +1044,7 @@ func TestRerouteNodeConnection(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	res, err := client.RerouteNodeConnection("wf_1", "node_a", RerouteNodeConnectionRequest{
+	res, err := client.RerouteNodeConnection(context.Background(), "wf_1", "node_a", RerouteNodeConnectionRequest{
 		ExpectedRevisionID: ptr("rev_30"),
 		NewTargetNodeID:    "node_c",
 	})
@@ -1197,7 +1198,7 @@ func TestUpdateWorkflowNode_RequestAndResponse(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	node, err := client.UpdateWorkflowNode("wf_1", "node_t", UpdateWorkflowNodeRequest{
+	node, err := client.UpdateWorkflowNode(context.Background(), "wf_1", "node_t", UpdateWorkflowNodeRequest{
 		ExpectedRevisionID: ptr("rev_8"),
 		Payload: UpdateWorkflowNodePayload{
 			TypeName:    WorkflowNodeTypeTimerAction,
@@ -1247,7 +1248,7 @@ func TestAddWorkflowBranch(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	res, err := client.AddWorkflowBranch("wf_1", "node_b", AddWorkflowBranchRequest{
+	res, err := client.AddWorkflowBranch(context.Background(), "wf_1", "node_b", AddWorkflowBranchRequest{
 		ExpectedRevisionID: ptr("rev_10"),
 	})
 	if err != nil {
@@ -1283,7 +1284,7 @@ func TestDeleteWorkflowNode(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	res, err := client.DeleteWorkflowNode("wf_1", "node_x", DeleteWorkflowNodeRequest{
+	res, err := client.DeleteWorkflowNode(context.Background(), "wf_1", "node_x", DeleteWorkflowNodeRequest{
 		ExpectedRevisionID: ptr("rev_19"),
 	})
 	if err != nil {
@@ -1324,7 +1325,7 @@ func TestDeleteWorkflowNodeRecursive_DryRun(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	res, err := client.DeleteWorkflowNodeRecursive("wf_1", "node_x", DeleteWorkflowNodeRequest{
+	res, err := client.DeleteWorkflowNodeRecursive(context.Background(), "wf_1", "node_x", DeleteWorkflowNodeRequest{
 		ExpectedRevisionID:  ptr("rev_1"),
 		DryRun:              true,
 		QueuedContactPolicy: WorkflowQueuedContactPolicyFail,
@@ -1364,7 +1365,7 @@ func TestDeleteWorkflow(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	err := client.DeleteWorkflow("wf_1", DeleteWorkflowRequest{
+	err := client.DeleteWorkflow(context.Background(), "wf_1", DeleteWorkflowRequest{
 		ExpectedRevisionID: ptr("rev_1"),
 	})
 	if err != nil {
@@ -1394,7 +1395,7 @@ func TestDeleteWorkflow_NullRevision(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	if err := client.DeleteWorkflow("wf_1", DeleteWorkflowRequest{}); err != nil {
+	if err := client.DeleteWorkflow(context.Background(), "wf_1", DeleteWorkflowRequest{}); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if !strings.Contains(rawBody, `"expectedRevisionId":null`) {
@@ -1411,7 +1412,7 @@ func TestDeleteWorkflow_Confirmed(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	err := client.DeleteWorkflow("wf_1", DeleteWorkflowRequest{
+	err := client.DeleteWorkflow(context.Background(), "wf_1", DeleteWorkflowRequest{
 		ExpectedRevisionID: ptr("rev_1"),
 		ConfirmDelete:      true,
 	})
@@ -1451,7 +1452,7 @@ func TestDeleteWorkflow_ConfirmationRequired(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			err := client.DeleteWorkflow("wf_1", DeleteWorkflowRequest{ExpectedRevisionID: ptr("rev_1")})
+			err := client.DeleteWorkflow(context.Background(), "wf_1", DeleteWorkflowRequest{ExpectedRevisionID: ptr("rev_1")})
 			if !errors.Is(err, ErrWorkflowDeleteConfirmationRequired) {
 				t.Fatalf("expected ErrWorkflowDeleteConfirmationRequired, got %v", err)
 			}
@@ -1478,7 +1479,7 @@ func TestDeleteWorkflow_StaleRevision409(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	err := client.DeleteWorkflow("wf_1", DeleteWorkflowRequest{ExpectedRevisionID: ptr("old_rev")})
+	err := client.DeleteWorkflow(context.Background(), "wf_1", DeleteWorkflowRequest{ExpectedRevisionID: ptr("old_rev")})
 	if errors.Is(err, ErrWorkflowDeleteConfirmationRequired) {
 		t.Fatal("a stale revision must not be reported as requiring confirmation")
 	}
@@ -1502,7 +1503,7 @@ func TestDeleteWorkflow_NotFound(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	err := client.DeleteWorkflow("wf_missing", DeleteWorkflowRequest{ExpectedRevisionID: ptr("rev_1")})
+	err := client.DeleteWorkflow(context.Background(), "wf_missing", DeleteWorkflowRequest{ExpectedRevisionID: ptr("rev_1")})
 	var apiErr *APIError
 	if !errors.As(err, &apiErr) {
 		t.Fatalf("expected *APIError, got %T: %v", err, err)
@@ -1601,7 +1602,7 @@ func TestCreateWorkflow_NullMailingList(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("key", WithBaseURL(server.URL))
-	if _, err := client.CreateWorkflow(CreateWorkflowRequest{Name: "New flow"}); err != nil {
+	if _, err := client.CreateWorkflow(context.Background(), CreateWorkflowRequest{Name: "New flow"}); err != nil {
 		t.Fatalf("CreateWorkflow: %v", err)
 	}
 	if !strings.Contains(rawBody, `"mailingListId":null`) {
@@ -1680,7 +1681,7 @@ func TestGetWorkflowNode_AddToListTrigger(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	node, err := client.GetWorkflowNode("wf_1", "node_a")
+	node, err := client.GetWorkflowNode(context.Background(), "wf_1", "node_a")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1707,7 +1708,7 @@ func TestGetWorkflowNode_SendEmailAction(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	node, err := client.GetWorkflowNode("wf_1", "node_s")
+	node, err := client.GetWorkflowNode(context.Background(), "wf_1", "node_s")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1817,7 +1818,7 @@ func TestGetWorkflowNodeMetrics(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			result, err := client.GetWorkflowNodeMetrics(tt.workflowID, tt.nodeID)
+			result, err := client.GetWorkflowNodeMetrics(context.Background(), tt.workflowID, tt.nodeID)
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError

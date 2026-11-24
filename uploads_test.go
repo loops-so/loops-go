@@ -2,6 +2,7 @@ package loops
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -73,7 +74,7 @@ func TestCreateUpload(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			result, err := client.CreateUpload(CreateUploadRequest{
+			result, err := client.CreateUpload(context.Background(), CreateUploadRequest{
 				ContentType:   "image/png",
 				ContentLength: 1024,
 			})
@@ -132,7 +133,7 @@ func TestCreateUpload_RequestBody(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	_, err := client.CreateUpload(CreateUploadRequest{
+	_, err := client.CreateUpload(context.Background(), CreateUploadRequest{
 		ContentType:   "image/png",
 		ContentLength: 2048,
 	})
@@ -194,7 +195,7 @@ func TestUpload(t *testing.T) {
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
 	imageBytes := []byte("\x89PNG\r\n\x1a\nfake-image-bytes")
-	result, err := client.Upload(UploadRequest{
+	result, err := client.Upload(context.Background(), UploadRequest{
 		ContentType:   "image/png",
 		ContentLength: int64(len(imageBytes)),
 		Body:          bytes.NewReader(imageBytes),
@@ -255,7 +256,7 @@ func TestUpload_CreateFails(t *testing.T) {
 	})
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	_, err := client.Upload(UploadRequest{
+	_, err := client.Upload(context.Background(), UploadRequest{
 		ContentType:   "image/bmp",
 		ContentLength: 4,
 		Body:          bytes.NewReader([]byte("body")),
@@ -301,7 +302,7 @@ func TestUpload_PutFails(t *testing.T) {
 	})
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	_, err := client.Upload(UploadRequest{
+	_, err := client.Upload(context.Background(), UploadRequest{
 		ContentType:   "image/png",
 		ContentLength: 4,
 		Body:          bytes.NewReader([]byte("body")),
@@ -341,7 +342,7 @@ func TestUpload_CompleteFails(t *testing.T) {
 	})
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	_, err := client.Upload(UploadRequest{
+	_, err := client.Upload(context.Background(), UploadRequest{
 		ContentType:   "image/png",
 		ContentLength: 4,
 		Body:          bytes.NewReader([]byte("body")),
@@ -412,7 +413,7 @@ func TestCompleteUpload(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			result, err := client.CompleteUpload(tt.id)
+			result, err := client.CompleteUpload(context.Background(), tt.id)
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError

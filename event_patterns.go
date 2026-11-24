@@ -1,6 +1,7 @@
 package loops
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -32,7 +33,7 @@ type EventPattern struct {
 
 // ListEventPatterns returns a single page of event patterns along with
 // pagination information. To iterate every page, use [Paginate].
-func (c *Client) ListEventPatterns(params PaginationParams) ([]EventPatternSummary, *Pagination, error) {
+func (c *Client) ListEventPatterns(ctx context.Context, params PaginationParams) ([]EventPatternSummary, *Pagination, error) {
 	q := url.Values{}
 	if params.PerPage != "" {
 		q.Set("perPage", params.PerPage)
@@ -46,7 +47,7 @@ func (c *Client) ListEventPatterns(params PaginationParams) ([]EventPatternSumma
 		path += "?" + q.Encode()
 	}
 
-	req, err := c.newRequest(http.MethodGet, path, nil)
+	req, err := c.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -73,8 +74,8 @@ func (c *Client) ListEventPatterns(params PaginationParams) ([]EventPatternSumma
 }
 
 // GetEventPatternByName returns the event pattern identified by eventName.
-func (c *Client) GetEventPatternByName(eventName string) (*EventPattern, error) {
-	req, err := c.newRequest(http.MethodGet, "/event-patterns/by-name/"+url.PathEscape(eventName), nil)
+func (c *Client) GetEventPatternByName(ctx context.Context, eventName string) (*EventPattern, error) {
+	req, err := c.newRequest(ctx, http.MethodGet, "/event-patterns/by-name/"+url.PathEscape(eventName), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -98,8 +99,8 @@ func (c *Client) GetEventPatternByName(eventName string) (*EventPattern, error) 
 }
 
 // GetEventPattern returns the event pattern identified by id.
-func (c *Client) GetEventPattern(id string) (*EventPattern, error) {
-	req, err := c.newRequest(http.MethodGet, "/event-patterns/"+id, nil)
+func (c *Client) GetEventPattern(ctx context.Context, id string) (*EventPattern, error) {
+	req, err := c.newRequest(ctx, http.MethodGet, "/event-patterns/"+id, nil)
 	if err != nil {
 		return nil, err
 	}

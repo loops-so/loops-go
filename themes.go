@@ -2,6 +2,7 @@ package loops
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -80,13 +81,13 @@ type UpdateThemeRequest struct {
 }
 
 // CreateTheme creates a new theme.
-func (c *Client) CreateTheme(req CreateThemeRequest) (*Theme, error) {
+func (c *Client) CreateTheme(ctx context.Context, req CreateThemeRequest) (*Theme, error) {
 	b, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode request: %w", err)
 	}
 
-	httpReq, err := c.newRequest(http.MethodPost, "/themes", bytes.NewReader(b))
+	httpReq, err := c.newRequest(ctx, http.MethodPost, "/themes", bytes.NewReader(b))
 	if err != nil {
 		return nil, err
 	}
@@ -110,13 +111,13 @@ func (c *Client) CreateTheme(req CreateThemeRequest) (*Theme, error) {
 }
 
 // UpdateTheme updates the theme identified by id.
-func (c *Client) UpdateTheme(id string, req UpdateThemeRequest) (*Theme, error) {
+func (c *Client) UpdateTheme(ctx context.Context, id string, req UpdateThemeRequest) (*Theme, error) {
 	b, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode request: %w", err)
 	}
 
-	httpReq, err := c.newRequest(http.MethodPost, "/themes/"+id, bytes.NewReader(b))
+	httpReq, err := c.newRequest(ctx, http.MethodPost, "/themes/"+id, bytes.NewReader(b))
 	if err != nil {
 		return nil, err
 	}
@@ -140,8 +141,8 @@ func (c *Client) UpdateTheme(id string, req UpdateThemeRequest) (*Theme, error) 
 }
 
 // GetTheme returns the theme identified by id.
-func (c *Client) GetTheme(id string) (*Theme, error) {
-	req, err := c.newRequest(http.MethodGet, "/themes/"+id, nil)
+func (c *Client) GetTheme(ctx context.Context, id string) (*Theme, error) {
+	req, err := c.newRequest(ctx, http.MethodGet, "/themes/"+id, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +167,7 @@ func (c *Client) GetTheme(id string) (*Theme, error) {
 
 // ListThemes returns a single page of themes along with pagination
 // information. To iterate every page, use [Paginate].
-func (c *Client) ListThemes(params PaginationParams) ([]Theme, *Pagination, error) {
+func (c *Client) ListThemes(ctx context.Context, params PaginationParams) ([]Theme, *Pagination, error) {
 	q := url.Values{}
 	if params.PerPage != "" {
 		q.Set("perPage", params.PerPage)
@@ -180,7 +181,7 @@ func (c *Client) ListThemes(params PaginationParams) ([]Theme, *Pagination, erro
 		path += "?" + q.Encode()
 	}
 
-	req, err := c.newRequest(http.MethodGet, path, nil)
+	req, err := c.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, nil, err
 	}

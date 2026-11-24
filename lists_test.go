@@ -1,6 +1,7 @@
 package loops
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -52,7 +53,7 @@ func TestListMailingLists(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			lists, err := client.ListMailingLists()
+			lists, err := client.ListMailingLists(context.Background())
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -96,7 +97,7 @@ func TestListMailingLists_ResponseData(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	lists, err := client.ListMailingLists()
+	lists, err := client.ListMailingLists(context.Background())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

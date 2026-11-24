@@ -2,6 +2,7 @@ package loops
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -52,13 +53,13 @@ type UpdateTransactionalRequest struct {
 // email message. Use [Client.UpdateEmailMessage] on the returned
 // DraftEmailMessageID to set the subject, sender, and LMX content, then call
 // [Client.PublishTransactional] to publish.
-func (c *Client) CreateTransactional(req CreateTransactionalRequest) (*TransactionalDraft, error) {
+func (c *Client) CreateTransactional(ctx context.Context, req CreateTransactionalRequest) (*TransactionalDraft, error) {
 	b, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode request: %w", err)
 	}
 
-	httpReq, err := c.newRequest(http.MethodPost, "/transactional-emails", bytes.NewReader(b))
+	httpReq, err := c.newRequest(ctx, http.MethodPost, "/transactional-emails", bytes.NewReader(b))
 	if err != nil {
 		return nil, err
 	}
@@ -82,8 +83,8 @@ func (c *Client) CreateTransactional(req CreateTransactionalRequest) (*Transacti
 }
 
 // GetTransactional returns the transactional email identified by id.
-func (c *Client) GetTransactional(id string) (*Transactional, error) {
-	req, err := c.newRequest(http.MethodGet, "/transactional-emails/"+id, nil)
+func (c *Client) GetTransactional(ctx context.Context, id string) (*Transactional, error) {
+	req, err := c.newRequest(ctx, http.MethodGet, "/transactional-emails/"+id, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -108,13 +109,13 @@ func (c *Client) GetTransactional(id string) (*Transactional, error) {
 
 // UpdateTransactional updates the transactional email identified by id and
 // returns its new state.
-func (c *Client) UpdateTransactional(id string, req UpdateTransactionalRequest) (*Transactional, error) {
+func (c *Client) UpdateTransactional(ctx context.Context, id string, req UpdateTransactionalRequest) (*Transactional, error) {
 	b, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode request: %w", err)
 	}
 
-	httpReq, err := c.newRequest(http.MethodPost, "/transactional-emails/"+id, bytes.NewReader(b))
+	httpReq, err := c.newRequest(ctx, http.MethodPost, "/transactional-emails/"+id, bytes.NewReader(b))
 	if err != nil {
 		return nil, err
 	}
@@ -141,8 +142,8 @@ func (c *Client) UpdateTransactional(id string, req UpdateTransactionalRequest) 
 // message. If a draft already exists it is returned unchanged; otherwise a
 // new empty draft is created (seeded from the most recent published version
 // when present).
-func (c *Client) EnsureTransactionalDraft(id string) (*TransactionalDraft, error) {
-	req, err := c.newRequest(http.MethodPost, "/transactional-emails/"+id+"/draft", nil)
+func (c *Client) EnsureTransactionalDraft(ctx context.Context, id string) (*TransactionalDraft, error) {
+	req, err := c.newRequest(ctx, http.MethodPost, "/transactional-emails/"+id+"/draft", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -168,8 +169,8 @@ func (c *Client) EnsureTransactionalDraft(id string) (*TransactionalDraft, error
 // PublishTransactional publishes the transactional email's current draft
 // email message. The draft becomes the published version and the draft is
 // cleared.
-func (c *Client) PublishTransactional(id string) (*Transactional, error) {
-	req, err := c.newRequest(http.MethodPost, "/transactional-emails/"+id+"/publish", nil)
+func (c *Client) PublishTransactional(ctx context.Context, id string) (*Transactional, error) {
+	req, err := c.newRequest(ctx, http.MethodPost, "/transactional-emails/"+id+"/publish", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -202,7 +203,7 @@ type ListTransactionalsParams struct {
 
 // ListTransactionals returns a single page of transactional emails along
 // with pagination information. To iterate every page, use [Paginate].
-func (c *Client) ListTransactionals(params ListTransactionalsParams) ([]Transactional, *Pagination, error) {
+func (c *Client) ListTransactionals(ctx context.Context, params ListTransactionalsParams) ([]Transactional, *Pagination, error) {
 	q := url.Values{}
 	if params.PerPage != "" {
 		q.Set("perPage", params.PerPage)
@@ -219,7 +220,7 @@ func (c *Client) ListTransactionals(params ListTransactionalsParams) ([]Transact
 		path += "?" + q.Encode()
 	}
 
-	req, err := c.newRequest(http.MethodGet, path, nil)
+	req, err := c.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -258,8 +259,8 @@ type TransactionalMetrics struct {
 
 // GetTransactionalMetrics returns all-time delivery metrics for the
 // transactional email identified by id.
-func (c *Client) GetTransactionalMetrics(id string) (*TransactionalMetrics, error) {
-	req, err := c.newRequest(http.MethodGet, "/transactional-emails/"+id+"/metrics", nil)
+func (c *Client) GetTransactionalMetrics(ctx context.Context, id string) (*TransactionalMetrics, error) {
+	req, err := c.newRequest(ctx, http.MethodGet, "/transactional-emails/"+id+"/metrics", nil)
 	if err != nil {
 		return nil, err
 	}

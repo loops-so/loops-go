@@ -1,6 +1,7 @@
 package loops
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -107,7 +108,7 @@ func TestGetComponent(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			result, err := client.GetComponent(tt.id)
+			result, err := client.GetComponent(context.Background(), tt.id)
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -201,7 +202,7 @@ func TestCreateComponent(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			result, err := client.CreateComponent(CreateComponentRequest{Name: "Header", LMX: "<H1>Hello</H1>"})
+			result, err := client.CreateComponent(context.Background(), CreateComponentRequest{Name: "Header", LMX: "<H1>Hello</H1>"})
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -317,7 +318,7 @@ func TestUpdateComponent(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			result, err := client.UpdateComponent(tt.id, tt.req)
+			result, err := client.UpdateComponent(context.Background(), tt.id, tt.req)
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -422,7 +423,7 @@ func TestListComponents(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			components, pagination, err := client.ListComponents(PaginationParams{})
+			components, pagination, err := client.ListComponents(context.Background(), PaginationParams{})
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -469,7 +470,7 @@ func TestListComponents_ResponseData(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	components, _, err := client.ListComponents(PaginationParams{})
+	components, _, err := client.ListComponents(context.Background(), PaginationParams{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -516,7 +517,7 @@ func TestListComponents_QueryParams(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			client.ListComponents(tt.params)
+			client.ListComponents(context.Background(), tt.params)
 
 			if gotPerPage != tt.wantPerPage {
 				t.Errorf("perPage = %q, want %q", gotPerPage, tt.wantPerPage)

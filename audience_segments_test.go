@@ -1,6 +1,7 @@
 package loops
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -123,7 +124,7 @@ func TestGetAudienceSegment(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			result, err := client.GetAudienceSegment(tt.id)
+			result, err := client.GetAudienceSegment(context.Background(), tt.id)
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -284,7 +285,7 @@ func TestCreateAudienceSegment(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			result, err := client.CreateAudienceSegment(tt.req)
+			result, err := client.CreateAudienceSegment(context.Background(), tt.req)
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -343,7 +344,7 @@ func TestListAudienceSegments(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	segments, pagination, err := client.ListAudienceSegments(PaginationParams{})
+	segments, pagination, err := client.ListAudienceSegments(context.Background(), PaginationParams{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -388,7 +389,7 @@ func TestListAudienceSegments_QueryParams(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	if _, _, err := client.ListAudienceSegments(PaginationParams{PerPage: "10", Cursor: "xyz"}); err != nil {
+	if _, _, err := client.ListAudienceSegments(context.Background(), PaginationParams{PerPage: "10", Cursor: "xyz"}); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if gotPerPage != "10" {
