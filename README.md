@@ -136,6 +136,22 @@ all, err := loops.Paginate(func(cursor string) ([]loops.Transactional, *loops.Pa
 })
 ```
 
+To process items as each page arrives, use `PaginateSeq`. It returns an iterator and fetches the next page only when the loop needs it, so a `break` stops the remaining requests:
+
+```go
+seq := loops.PaginateSeq(func(cursor string) ([]loops.Transactional, *loops.Pagination, error) {
+    return client.ListTransactionals(ctx, loops.ListTransactionalsParams{
+        PaginationParams: loops.PaginationParams{Cursor: cursor},
+    })
+})
+for item, err := range seq {
+    if err != nil {
+        return err
+    }
+    fmt.Println(item.ID)
+}
+```
+
 ## Deleting workflows
 
 `DeleteWorkflow` takes two attempts when the workflow is sending or has queued contacts. The first attempt fails with an error wrapping `loops.ErrWorkflowDeleteConfirmationRequired`, whose message describes the impact. Retry with the same `ExpectedRevisionID` and `ConfirmDelete` set to `true` to delete the workflow, stop sending it, and cancel its queued contacts.
