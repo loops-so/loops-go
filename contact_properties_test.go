@@ -70,9 +70,9 @@ func TestListContactProperties(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			props, err := client.ListContactProperties(context.Background(), tt.customOnly)
+			props, err := client.ListContactProperties(context.Background(), ListContactPropertiesParams{CustomOnly: tt.customOnly})
 
-			if tt.wantQuery != "" && gotQuery != tt.wantQuery {
+			if gotQuery != tt.wantQuery {
 				t.Errorf("query = %q, want %q", gotQuery, tt.wantQuery)
 			}
 
@@ -188,7 +188,7 @@ func TestListContactProperties_ResponseData(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	props, err := client.ListContactProperties(context.Background(), false)
+	props, err := client.ListContactProperties(context.Background(), ListContactPropertiesParams{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

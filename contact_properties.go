@@ -17,16 +17,22 @@ type ContactProperty struct {
 	Type  string `json:"type"`
 }
 
+// ListContactPropertiesParams controls a [Client.ListContactProperties]
+// request. Set CustomOnly to return only custom properties; the zero value
+// returns built-in properties as well.
+type ListContactPropertiesParams struct {
+	CustomOnly bool
+}
+
 // ListContactProperties returns the contact properties defined on your
-// account. If customOnly is true, only custom properties are returned;
-// otherwise built-in properties are included as well.
-func (c *Client) ListContactProperties(ctx context.Context, customOnly bool) ([]ContactProperty, error) {
+// account.
+func (c *Client) ListContactProperties(ctx context.Context, params ListContactPropertiesParams) ([]ContactProperty, error) {
 	req, err := c.newRequest(ctx, http.MethodGet, "/contacts/properties", nil)
 	if err != nil {
 		return nil, err
 	}
 
-	if customOnly {
+	if params.CustomOnly {
 		q := req.URL.Query()
 		q.Set("list", "custom")
 		req.URL.RawQuery = q.Encode()
