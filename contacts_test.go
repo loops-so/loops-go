@@ -212,7 +212,7 @@ func TestDeleteContact(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			err := client.DeleteContact(context.Background(), tt.email, tt.userID)
+			err := client.DeleteContact(context.Background(), DeleteContactRequest{Email: tt.email, UserID: tt.userID})
 
 			if tt.wantBody != nil {
 				for k, v := range tt.wantBody {
@@ -440,7 +440,7 @@ func TestCheckContactSuppression(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			result, err := client.CheckContactSuppression(context.Background(), tt.email, tt.userID)
+			result, err := client.CheckContactSuppression(context.Background(), ContactSuppressionParams{Email: tt.email, UserID: tt.userID})
 
 			if tt.wantQuery != "" && gotQuery != tt.wantQuery {
 				t.Errorf("query = %q, want %q", gotQuery, tt.wantQuery)
@@ -556,7 +556,7 @@ func TestRemoveContactSuppression(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			result, err := client.RemoveContactSuppression(context.Background(), tt.email, tt.userID)
+			result, err := client.RemoveContactSuppression(context.Background(), ContactSuppressionParams{Email: tt.email, UserID: tt.userID})
 
 			if tt.wantQuery != "" && gotQuery != tt.wantQuery {
 				t.Errorf("query = %q, want %q", gotQuery, tt.wantQuery)
