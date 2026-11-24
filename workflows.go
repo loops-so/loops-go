@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 )
 
@@ -714,8 +715,8 @@ type ListWorkflowsParams struct {
 // pagination information. To iterate every page, use [Paginate].
 func (c *Client) ListWorkflows(ctx context.Context, params ListWorkflowsParams) ([]WorkflowSummary, *Pagination, error) {
 	q := url.Values{}
-	if params.PerPage != "" {
-		q.Set("perPage", params.PerPage)
+	if params.PerPage != 0 {
+		q.Set("perPage", strconv.Itoa(params.PerPage))
 	}
 	if params.Cursor != "" {
 		q.Set("cursor", params.Cursor)

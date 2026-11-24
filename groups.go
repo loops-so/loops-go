@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 )
 
 // Group is a campaign, transactional-email, or workflow group. Each team has
@@ -184,8 +185,8 @@ func (c *Client) updateGroup(ctx context.Context, path string, req UpdateGroupRe
 
 func (c *Client) listGroups(ctx context.Context, basePath string, params PaginationParams) ([]Group, *Pagination, error) {
 	q := url.Values{}
-	if params.PerPage != "" {
-		q.Set("perPage", params.PerPage)
+	if params.PerPage != 0 {
+		q.Set("perPage", strconv.Itoa(params.PerPage))
 	}
 	if params.Cursor != "" {
 		q.Set("cursor", params.Cursor)

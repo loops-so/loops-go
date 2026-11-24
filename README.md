@@ -117,7 +117,7 @@ Paginated list methods return a single page of results and a `*Pagination` value
 
 ```go
 items, page, err := client.ListTransactionals(ctx, loops.ListTransactionalsParams{
-    PaginationParams:     loops.PaginationParams{PerPage: "50"},
+    PaginationParams:     loops.PaginationParams{PerPage: 50},
     TransactionalGroupID: "grp_123",
 })
 if err != nil {

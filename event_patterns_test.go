@@ -371,7 +371,7 @@ func TestListEventPatterns_QueryParams(t *testing.T) {
 		},
 		{
 			name:        "both params",
-			params:      PaginationParams{PerPage: "10", Cursor: "xyz"},
+			params:      PaginationParams{PerPage: 10, Cursor: "xyz"},
 			wantPerPage: "10",
 			wantCursor:  "xyz",
 		},

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 )
 
 // Component is a reusable LMX snippet that can be included from other email
@@ -129,8 +130,8 @@ func (c *Client) GetComponent(ctx context.Context, id string) (*Component, error
 // information. To iterate every page, use [Paginate].
 func (c *Client) ListComponents(ctx context.Context, params PaginationParams) ([]Component, *Pagination, error) {
 	q := url.Values{}
-	if params.PerPage != "" {
-		q.Set("perPage", params.PerPage)
+	if params.PerPage != 0 {
+		q.Set("perPage", strconv.Itoa(params.PerPage))
 	}
 	if params.Cursor != "" {
 		q.Set("cursor", params.Cursor)

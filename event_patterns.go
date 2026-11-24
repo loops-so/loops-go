@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 )
 
 // EventPatternSummary is the list-item representation of an event pattern
@@ -35,8 +36,8 @@ type EventPattern struct {
 // pagination information. To iterate every page, use [Paginate].
 func (c *Client) ListEventPatterns(ctx context.Context, params PaginationParams) ([]EventPatternSummary, *Pagination, error) {
 	q := url.Values{}
-	if params.PerPage != "" {
-		q.Set("perPage", params.PerPage)
+	if params.PerPage != 0 {
+		q.Set("perPage", strconv.Itoa(params.PerPage))
 	}
 	if params.Cursor != "" {
 		q.Set("cursor", params.Cursor)

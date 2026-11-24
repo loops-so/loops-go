@@ -530,7 +530,7 @@ func TestListCampaigns_QueryParams(t *testing.T) {
 		},
 		{
 			name:        "both params",
-			params:      ListCampaignsParams{PaginationParams: PaginationParams{PerPage: "10", Cursor: "xyz"}},
+			params:      ListCampaignsParams{PaginationParams: PaginationParams{PerPage: 10, Cursor: "xyz"}},
 			wantPerPage: "10",
 			wantCursor:  "xyz",
 		},

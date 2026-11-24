@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 )
 
 // ThemeStyles is the set of visual style values for a [Theme]. Colors are
@@ -169,8 +170,8 @@ func (c *Client) GetTheme(ctx context.Context, id string) (*Theme, error) {
 // information. To iterate every page, use [Paginate].
 func (c *Client) ListThemes(ctx context.Context, params PaginationParams) ([]Theme, *Pagination, error) {
 	q := url.Values{}
-	if params.PerPage != "" {
-		q.Set("perPage", params.PerPage)
+	if params.PerPage != 0 {
+		q.Set("perPage", strconv.Itoa(params.PerPage))
 	}
 	if params.Cursor != "" {
 		q.Set("cursor", params.Cursor)

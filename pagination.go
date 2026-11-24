@@ -12,9 +12,10 @@ type Pagination struct {
 }
 
 // PaginationParams controls a single page request. Both fields are optional;
-// leave Cursor empty to request the first page.
+// leave PerPage at zero to use the API default page size, and leave Cursor
+// empty to request the first page.
 type PaginationParams struct {
-	PerPage string
+	PerPage int
 	Cursor  string
 }
 

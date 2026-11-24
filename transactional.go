@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 )
 
 // TransactionalEmail describes a transactional email template configured in
@@ -85,8 +86,8 @@ func (c *Client) SendTransactional(ctx context.Context, req SendTransactionalReq
 // created/updated timestamps).
 func (c *Client) ListTransactional(ctx context.Context, params PaginationParams) ([]TransactionalEmail, *Pagination, error) {
 	q := url.Values{}
-	if params.PerPage != "" {
-		q.Set("perPage", params.PerPage)
+	if params.PerPage != 0 {
+		q.Set("perPage", strconv.Itoa(params.PerPage))
 	}
 	if params.Cursor != "" {
 		q.Set("cursor", params.Cursor)
