@@ -2,6 +2,7 @@ package loops
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -101,7 +102,7 @@ type PublishFooterVariantRequest struct {
 
 // ListFooters returns a single page of footers, most recently created first,
 // along with pagination information. To iterate every page, use [Paginate].
-func (c *Client) ListFooters(params PaginationParams) ([]Footer, *Pagination, error) {
+func (c *Client) ListFooters(ctx context.Context, params PaginationParams) ([]Footer, *Pagination, error) {
 	q := url.Values{}
 	if params.PerPage != "" {
 		q.Set("perPage", params.PerPage)
@@ -115,7 +116,7 @@ func (c *Client) ListFooters(params PaginationParams) ([]Footer, *Pagination, er
 		path += "?" + q.Encode()
 	}
 
-	req, err := c.newRequest(http.MethodGet, path, nil)
+	req, err := c.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -144,13 +145,13 @@ func (c *Client) ListFooters(params PaginationParams) ([]Footer, *Pagination, er
 // CreateFooter creates a footer with one variant. The variant starts with an
 // unpublished draft. Emails cannot use the footer until the variant is
 // published with [Client.PublishFooterVariant].
-func (c *Client) CreateFooter(req CreateFooterRequest) (*FooterWithVariants, error) {
+func (c *Client) CreateFooter(ctx context.Context, req CreateFooterRequest) (*FooterWithVariants, error) {
 	b, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode request: %w", err)
 	}
 
-	httpReq, err := c.newRequest(http.MethodPost, "/footers", bytes.NewReader(b))
+	httpReq, err := c.newRequest(ctx, http.MethodPost, "/footers", bytes.NewReader(b))
 	if err != nil {
 		return nil, err
 	}
@@ -175,8 +176,8 @@ func (c *Client) CreateFooter(req CreateFooterRequest) (*FooterWithVariants, err
 
 // GetFooter returns the footer identified by id, with the content of each
 // variant.
-func (c *Client) GetFooter(id string) (*FooterWithVariants, error) {
-	req, err := c.newRequest(http.MethodGet, "/footers/"+id, nil)
+func (c *Client) GetFooter(ctx context.Context, id string) (*FooterWithVariants, error) {
+	req, err := c.newRequest(ctx, http.MethodGet, "/footers/"+id, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -202,13 +203,13 @@ func (c *Client) GetFooter(id string) (*FooterWithVariants, error) {
 // UpdateFooter updates the name or placement of the footer identified by id.
 // Changes apply at once, also to running workflows. To change the default
 // footer, use [Client.SetDefaultFooter].
-func (c *Client) UpdateFooter(id string, req UpdateFooterRequest) (*FooterWithVariants, error) {
+func (c *Client) UpdateFooter(ctx context.Context, id string, req UpdateFooterRequest) (*FooterWithVariants, error) {
 	b, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode request: %w", err)
 	}
 
-	httpReq, err := c.newRequest(http.MethodPost, "/footers/"+id, bytes.NewReader(b))
+	httpReq, err := c.newRequest(ctx, http.MethodPost, "/footers/"+id, bytes.NewReader(b))
 	if err != nil {
 		return nil, err
 	}
@@ -234,8 +235,8 @@ func (c *Client) UpdateFooter(id string, req UpdateFooterRequest) (*FooterWithVa
 // DeleteFooter deletes the footer identified by id and its variants. The API
 // rejects the delete with a 409 when the footer is the team's default footer
 // or when emails use it.
-func (c *Client) DeleteFooter(id string) error {
-	req, err := c.newRequest(http.MethodDelete, "/footers/"+id, nil)
+func (c *Client) DeleteFooter(ctx context.Context, id string) error {
+	req, err := c.newRequest(ctx, http.MethodDelete, "/footers/"+id, nil)
 	if err != nil {
 		return err
 	}
@@ -256,13 +257,13 @@ func (c *Client) DeleteFooter(id string) error {
 // SetDefaultFooter makes the published footer identified by id the team's
 // default footer. New campaign and workflow emails use the default footer.
 // The API rejects the request with a 409 when the footer is not published.
-func (c *Client) SetDefaultFooter(id string, req SetDefaultFooterRequest) (*SetDefaultFooterResponse, error) {
+func (c *Client) SetDefaultFooter(ctx context.Context, id string, req SetDefaultFooterRequest) (*SetDefaultFooterResponse, error) {
 	b, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode request: %w", err)
 	}
 
-	httpReq, err := c.newRequest(http.MethodPost, "/footers/"+id+"/set-default", bytes.NewReader(b))
+	httpReq, err := c.newRequest(ctx, http.MethodPost, "/footers/"+id+"/set-default", bytes.NewReader(b))
 	if err != nil {
 		return nil, err
 	}
@@ -287,8 +288,8 @@ func (c *Client) SetDefaultFooter(id string, req SetDefaultFooterRequest) (*SetD
 
 // GetFooterVariant returns the draft and published content of the footer
 // variant identified by footerID and variantID.
-func (c *Client) GetFooterVariant(footerID, variantID string) (*FooterVariant, error) {
-	req, err := c.newRequest(http.MethodGet, "/footers/"+footerID+"/variants/"+variantID, nil)
+func (c *Client) GetFooterVariant(ctx context.Context, footerID, variantID string) (*FooterVariant, error) {
+	req, err := c.newRequest(ctx, http.MethodGet, "/footers/"+footerID+"/variants/"+variantID, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -316,8 +317,8 @@ func (c *Client) GetFooterVariant(footerID, variantID string) (*FooterVariant, e
 // [Client.PublishFooterVariant]. The API rejects the update with a 409 when
 // ExpectedRevisionID is stale, and with a 422 when the LMX is invalid or uses
 // LMX that footers do not support.
-func (c *Client) UpdateFooterVariant(footerID, variantID string, req UpdateFooterVariantRequest) (*FooterVariant, error) {
-	return c.postFooterVariant("/footers/"+footerID+"/variants/"+variantID, req)
+func (c *Client) UpdateFooterVariant(ctx context.Context, footerID, variantID string, req UpdateFooterVariantRequest) (*FooterVariant, error) {
+	return c.postFooterVariant(ctx, "/footers/"+footerID+"/variants/"+variantID, req)
 }
 
 // PublishFooterVariant publishes the draft LMX content of a footer variant.
@@ -325,17 +326,17 @@ func (c *Client) UpdateFooterVariant(footerID, variantID string, req UpdateFoote
 // publish with a 409 when ExpectedRevisionID is stale, and with a 422 when the
 // draft does not have {system.company_name} and {system.company_address} in
 // the text and {system.unsubscribe_link} as the URL of a link or button.
-func (c *Client) PublishFooterVariant(footerID, variantID string, req PublishFooterVariantRequest) (*FooterVariant, error) {
-	return c.postFooterVariant("/footers/"+footerID+"/variants/"+variantID+"/publish", req)
+func (c *Client) PublishFooterVariant(ctx context.Context, footerID, variantID string, req PublishFooterVariantRequest) (*FooterVariant, error) {
+	return c.postFooterVariant(ctx, "/footers/"+footerID+"/variants/"+variantID+"/publish", req)
 }
 
-func (c *Client) postFooterVariant(path string, req any) (*FooterVariant, error) {
+func (c *Client) postFooterVariant(ctx context.Context, path string, req any) (*FooterVariant, error) {
 	b, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode request: %w", err)
 	}
 
-	httpReq, err := c.newRequest(http.MethodPost, path, bytes.NewReader(b))
+	httpReq, err := c.newRequest(ctx, http.MethodPost, path, bytes.NewReader(b))
 	if err != nil {
 		return nil, err
 	}

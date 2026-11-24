@@ -2,6 +2,7 @@ package loops
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -135,13 +136,13 @@ type CampaignCreateResponse struct {
 
 // CreateCampaign creates a new campaign and an empty email message attached
 // to it.
-func (c *Client) CreateCampaign(req CreateCampaignRequest) (*CampaignCreateResponse, error) {
+func (c *Client) CreateCampaign(ctx context.Context, req CreateCampaignRequest) (*CampaignCreateResponse, error) {
 	b, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode request: %w", err)
 	}
 
-	httpReq, err := c.newRequest(http.MethodPost, "/campaigns", bytes.NewReader(b))
+	httpReq, err := c.newRequest(ctx, http.MethodPost, "/campaigns", bytes.NewReader(b))
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +168,7 @@ func (c *Client) CreateCampaign(req CreateCampaignRequest) (*CampaignCreateRespo
 // UpdateCampaign updates the campaign identified by id with the fields
 // selected in req.Set and returns its new state. See [UpdateCampaignRequest]
 // for the selection semantics.
-func (c *Client) UpdateCampaign(id string, req UpdateCampaignRequest) (*Campaign, error) {
+func (c *Client) UpdateCampaign(ctx context.Context, id string, req UpdateCampaignRequest) (*Campaign, error) {
 	body := map[string]any{}
 	if req.Set["name"] {
 		body["name"] = req.Name
@@ -193,7 +194,7 @@ func (c *Client) UpdateCampaign(id string, req UpdateCampaignRequest) (*Campaign
 		return nil, fmt.Errorf("failed to encode request: %w", err)
 	}
 
-	httpReq, err := c.newRequest(http.MethodPost, "/campaigns/"+id, bytes.NewReader(b))
+	httpReq, err := c.newRequest(ctx, http.MethodPost, "/campaigns/"+id, bytes.NewReader(b))
 	if err != nil {
 		return nil, err
 	}
@@ -217,8 +218,8 @@ func (c *Client) UpdateCampaign(id string, req UpdateCampaignRequest) (*Campaign
 }
 
 // GetCampaign returns the campaign identified by id.
-func (c *Client) GetCampaign(id string) (*Campaign, error) {
-	req, err := c.newRequest(http.MethodGet, "/campaigns/"+id, nil)
+func (c *Client) GetCampaign(ctx context.Context, id string) (*Campaign, error) {
+	req, err := c.newRequest(ctx, http.MethodGet, "/campaigns/"+id, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -251,7 +252,7 @@ type ListCampaignsParams struct {
 
 // ListCampaigns returns a single page of campaigns along with pagination
 // information. To iterate every page, use [Paginate].
-func (c *Client) ListCampaigns(params ListCampaignsParams) ([]Campaign, *Pagination, error) {
+func (c *Client) ListCampaigns(ctx context.Context, params ListCampaignsParams) ([]Campaign, *Pagination, error) {
 	q := url.Values{}
 	if params.PerPage != "" {
 		q.Set("perPage", params.PerPage)
@@ -268,7 +269,7 @@ func (c *Client) ListCampaigns(params ListCampaignsParams) ([]Campaign, *Paginat
 		path += "?" + q.Encode()
 	}
 
-	req, err := c.newRequest(http.MethodGet, path, nil)
+	req, err := c.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -311,8 +312,8 @@ type EmailMetrics struct {
 // GetCampaignMetrics returns all-time email engagement metrics for the
 // campaign identified by id. The server responds with a 400 error when the
 // campaign has not been sent yet or has no email message.
-func (c *Client) GetCampaignMetrics(id string) (*EmailMetrics, error) {
-	req, err := c.newRequest(http.MethodGet, "/campaigns/"+id+"/metrics", nil)
+func (c *Client) GetCampaignMetrics(ctx context.Context, id string) (*EmailMetrics, error) {
+	req, err := c.newRequest(ctx, http.MethodGet, "/campaigns/"+id+"/metrics", nil)
 	if err != nil {
 		return nil, err
 	}

@@ -34,7 +34,7 @@ func TestDo_RetryResetsBody(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	req, _ := client.newRequest(http.MethodPost, "/", bytes.NewReader([]byte(`{"hello":"world"}`)))
+	req, _ := client.newRequest(context.Background(), http.MethodPost, "/", bytes.NewReader([]byte(`{"hello":"world"}`)))
 	resp, err := client.do(req)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -65,7 +65,7 @@ func TestNewRequest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req, err := client.newRequest(tt.method, tt.path, nil)
+			req, err := client.newRequest(context.Background(), tt.method, tt.path, nil)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -93,7 +93,7 @@ func TestNewRequest(t *testing.T) {
 
 func TestWithUserAgent(t *testing.T) {
 	client := NewClient("test-key", WithBaseURL("https://example.com/api/v1"), WithUserAgent("loops-cli/1.2.3"))
-	req, err := client.newRequest(http.MethodGet, "/api-key", nil)
+	req, err := client.newRequest(context.Background(), http.MethodGet, "/api-key", nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -104,7 +104,7 @@ func TestWithUserAgent(t *testing.T) {
 
 func TestNewRequest_InvalidURL(t *testing.T) {
 	client := NewClient("test-key", WithBaseURL("://bad-url"))
-	_, err := client.newRequest(http.MethodGet, "/path", nil)
+	_, err := client.newRequest(context.Background(), http.MethodGet, "/path", nil)
 	if err == nil {
 		t.Error("expected error for invalid URL, got nil")
 	}
@@ -226,7 +226,7 @@ func TestDo_Retries(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			req, _ := client.newRequest(http.MethodGet, "/", nil)
+			req, _ := client.newRequest(context.Background(), http.MethodGet, "/", nil)
 			resp, err := client.do(req)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
@@ -414,6 +414,61 @@ func TestDo_CancelsRetryBackoff(t *testing.T) {
 			}
 			if elapsed >= baseDelay {
 				t.Errorf("Do returned after %v, want it to stop the %v backoff early", elapsed, baseDelay)
+			}
+		})
+	}
+}
+
+func TestTypedMethod_ContextPropagation(t *testing.T) {
+	tests := []struct {
+		name    string
+		ctx     func() (context.Context, context.CancelFunc)
+		wantErr error
+	}{
+		{
+			name: "canceled",
+			ctx: func() (context.Context, context.CancelFunc) {
+				ctx, cancel := context.WithCancel(context.Background())
+				cancel()
+				return ctx, cancel
+			},
+			wantErr: context.Canceled,
+		},
+		{
+			name: "deadline",
+			ctx: func() (context.Context, context.CancelFunc) {
+				return context.WithTimeout(context.Background(), 50*time.Millisecond)
+			},
+			wantErr: context.DeadlineExceeded,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var attempts atomic.Int32
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				attempts.Add(1)
+				io.Copy(io.Discard, r.Body)
+				<-r.Context().Done()
+			}))
+			defer server.Close()
+
+			ctx, cancel := tt.ctx()
+			defer cancel()
+
+			client := NewClient("test-key", WithBaseURL(server.URL))
+			start := time.Now()
+			err := client.SendEvent(ctx, SendEventRequest{Email: "test@example.com", EventName: "signup"})
+			elapsed := time.Since(start)
+
+			if !errors.Is(err, tt.wantErr) {
+				t.Fatalf("err = %v, want %v", err, tt.wantErr)
+			}
+			if attempts.Load() > 1 {
+				t.Errorf("attempts = %d, want no retry after the context ended", attempts.Load())
+			}
+			if elapsed >= baseDelay {
+				t.Errorf("SendEvent returned after %v, want it to stop before the %v backoff", elapsed, baseDelay)
 			}
 		})
 	}

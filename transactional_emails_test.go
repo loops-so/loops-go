@@ -1,6 +1,7 @@
 package loops
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -64,7 +65,7 @@ func TestCreateTransactional(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			resp, err := client.CreateTransactional(CreateTransactionalRequest{Name: "Welcome email"})
+			resp, err := client.CreateTransactional(context.Background(), CreateTransactionalRequest{Name: "Welcome email"})
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -129,7 +130,7 @@ func TestCreateTransactional_RequestBody(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	if _, err := client.CreateTransactional(CreateTransactionalRequest{Name: "Welcome email"}); err != nil {
+	if _, err := client.CreateTransactional(context.Background(), CreateTransactionalRequest{Name: "Welcome email"}); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -156,7 +157,7 @@ func TestCreateTransactional_WithGroup(t *testing.T) {
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
 	req := CreateTransactionalRequest{Name: "Welcome email", TransactionalGroupID: "grp_welcome"}
-	if _, err := client.CreateTransactional(req); err != nil {
+	if _, err := client.CreateTransactional(context.Background(), req); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if body["transactionalGroupId"] != "grp_welcome" {
@@ -226,7 +227,7 @@ func TestGetTransactional(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			result, err := client.GetTransactional(tt.id)
+			result, err := client.GetTransactional(context.Background(), tt.id)
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -320,7 +321,7 @@ func TestUpdateTransactional(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			result, err := client.UpdateTransactional("tx_abc123", UpdateTransactionalRequest{Name: "Renamed"})
+			result, err := client.UpdateTransactional(context.Background(), "tx_abc123", UpdateTransactionalRequest{Name: "Renamed"})
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -376,7 +377,7 @@ func TestUpdateTransactional_RequestBodyAndPath(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	if _, err := client.UpdateTransactional("tx_abc123", UpdateTransactionalRequest{Name: "Renamed"}); err != nil {
+	if _, err := client.UpdateTransactional(context.Background(), "tx_abc123", UpdateTransactionalRequest{Name: "Renamed"}); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -424,7 +425,7 @@ func TestEnsureTransactionalDraft(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			result, err := client.EnsureTransactionalDraft("tx_abc123")
+			result, err := client.EnsureTransactionalDraft(context.Background(), "tx_abc123")
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -492,7 +493,7 @@ func TestPublishTransactional(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			result, err := client.PublishTransactional("tx_abc123")
+			result, err := client.PublishTransactional(context.Background(), "tx_abc123")
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -600,7 +601,7 @@ func TestListTransactionals(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			items, pagination, err := client.ListTransactionals(ListTransactionalsParams{})
+			items, pagination, err := client.ListTransactionals(context.Background(), ListTransactionalsParams{})
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -647,7 +648,7 @@ func TestListTransactionals_ResponseData(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	items, _, err := client.ListTransactionals(ListTransactionalsParams{})
+	items, _, err := client.ListTransactionals(context.Background(), ListTransactionalsParams{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -710,7 +711,7 @@ func TestListTransactionals_QueryParams(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			client.ListTransactionals(tt.params)
+			client.ListTransactionals(context.Background(), tt.params)
 
 			if gotPath != "/transactional-emails" {
 				t.Errorf("path = %q, want /transactional-emails", gotPath)
@@ -789,7 +790,7 @@ func TestGetTransactionalMetrics(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			result, err := client.GetTransactionalMetrics(tt.id)
+			result, err := client.GetTransactionalMetrics(context.Background(), tt.id)
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError

@@ -2,6 +2,7 @@ package loops
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -133,7 +134,7 @@ func buildContactBody(
 }
 
 // CreateContact creates a new contact and returns the new contact's ID.
-func (c *Client) CreateContact(req CreateContactRequest) (string, error) {
+func (c *Client) CreateContact(ctx context.Context, req CreateContactRequest) (string, error) {
 	body := buildContactBody(req.ContactProperties, req.FirstName, req.LastName, req.Subscribed, req.UserGroup, req.MailingLists)
 	body["email"] = req.Email
 	if req.Source != "" {
@@ -148,7 +149,7 @@ func (c *Client) CreateContact(req CreateContactRequest) (string, error) {
 		return "", fmt.Errorf("failed to encode request: %w", err)
 	}
 
-	httpReq, err := c.newRequest(http.MethodPost, "/contacts/create", bytes.NewReader(b))
+	httpReq, err := c.newRequest(ctx, http.MethodPost, "/contacts/create", bytes.NewReader(b))
 	if err != nil {
 		return "", err
 	}
@@ -191,7 +192,7 @@ type UpdateContactRequest struct {
 }
 
 // UpdateContact updates an existing contact, identified by email or user ID.
-func (c *Client) UpdateContact(req UpdateContactRequest) error {
+func (c *Client) UpdateContact(ctx context.Context, req UpdateContactRequest) error {
 	body := buildContactBody(req.ContactProperties, req.FirstName, req.LastName, req.Subscribed, req.UserGroup, req.MailingLists)
 	if req.Email != "" {
 		body["email"] = req.Email
@@ -208,7 +209,7 @@ func (c *Client) UpdateContact(req UpdateContactRequest) error {
 		return fmt.Errorf("failed to encode request: %w", err)
 	}
 
-	httpReq, err := c.newRequest(http.MethodPut, "/contacts/update", bytes.NewReader(b))
+	httpReq, err := c.newRequest(ctx, http.MethodPut, "/contacts/update", bytes.NewReader(b))
 	if err != nil {
 		return err
 	}
@@ -229,7 +230,7 @@ func (c *Client) UpdateContact(req UpdateContactRequest) error {
 // DeleteContact deletes a contact identified by email or user ID. Set exactly
 // one of the two. Only the non-empty identifier is sent; the API rejects a
 // request that provides both or neither.
-func (c *Client) DeleteContact(email, userID string) error {
+func (c *Client) DeleteContact(ctx context.Context, email, userID string) error {
 	body := make(map[string]any)
 	if email != "" {
 		body["email"] = email
@@ -243,7 +244,7 @@ func (c *Client) DeleteContact(email, userID string) error {
 		return fmt.Errorf("failed to encode request: %w", err)
 	}
 
-	httpReq, err := c.newRequest(http.MethodPost, "/contacts/delete", bytes.NewReader(b))
+	httpReq, err := c.newRequest(ctx, http.MethodPost, "/contacts/delete", bytes.NewReader(b))
 	if err != nil {
 		return err
 	}
@@ -290,8 +291,8 @@ type ContactSuppressionRemoval struct {
 
 // CheckContactSuppression reports whether the contact identified by email or
 // user ID is currently suppressed.
-func (c *Client) CheckContactSuppression(email, userID string) (*ContactSuppression, error) {
-	req, err := c.newRequest(http.MethodGet, "/contacts/suppression", nil)
+func (c *Client) CheckContactSuppression(ctx context.Context, email, userID string) (*ContactSuppression, error) {
+	req, err := c.newRequest(ctx, http.MethodGet, "/contacts/suppression", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -326,8 +327,8 @@ func (c *Client) CheckContactSuppression(email, userID string) (*ContactSuppress
 // RemoveContactSuppression removes a contact from the suppression list,
 // allowing future sends to them. Removals count against a monthly quota
 // reported in the response.
-func (c *Client) RemoveContactSuppression(email, userID string) (*ContactSuppressionRemoval, error) {
-	req, err := c.newRequest(http.MethodDelete, "/contacts/suppression", nil)
+func (c *Client) RemoveContactSuppression(ctx context.Context, email, userID string) (*ContactSuppressionRemoval, error) {
+	req, err := c.newRequest(ctx, http.MethodDelete, "/contacts/suppression", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -369,8 +370,8 @@ type FindContactParams struct {
 // FindContacts looks up contacts by email or user ID. The result is a slice
 // because the underlying endpoint may return multiple matches; in typical
 // use it contains zero or one entry.
-func (c *Client) FindContacts(params FindContactParams) ([]Contact, error) {
-	req, err := c.newRequest(http.MethodGet, "/contacts/find", nil)
+func (c *Client) FindContacts(ctx context.Context, params FindContactParams) ([]Contact, error) {
+	req, err := c.newRequest(ctx, http.MethodGet, "/contacts/find", nil)
 	if err != nil {
 		return nil, err
 	}

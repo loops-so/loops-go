@@ -1,6 +1,7 @@
 package loops
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -117,7 +118,7 @@ func TestGetTheme(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			result, err := client.GetTheme(tt.id)
+			result, err := client.GetTheme(context.Background(), tt.id)
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -221,7 +222,7 @@ func TestListThemes(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			themes, pagination, err := client.ListThemes(PaginationParams{})
+			themes, pagination, err := client.ListThemes(context.Background(), PaginationParams{})
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -268,7 +269,7 @@ func TestListThemes_ResponseData(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	themes, _, err := client.ListThemes(PaginationParams{})
+	themes, _, err := client.ListThemes(context.Background(), PaginationParams{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -321,7 +322,7 @@ func TestListThemes_QueryParams(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			client.ListThemes(tt.params)
+			client.ListThemes(context.Background(), tt.params)
 
 			if gotPerPage != tt.wantPerPage {
 				t.Errorf("perPage = %q, want %q", gotPerPage, tt.wantPerPage)
@@ -346,7 +347,7 @@ func TestCreateTheme(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	result, err := client.CreateTheme(CreateThemeRequest{
+	result, err := client.CreateTheme(context.Background(), CreateThemeRequest{
 		Name:   "Brand",
 		Styles: &ThemeStyles{BackgroundColor: "#ffffff", TextBaseFontSize: 16},
 	})
@@ -392,7 +393,7 @@ func TestCreateTheme_OmitsStyles(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	if _, err := client.CreateTheme(CreateThemeRequest{Name: "Brand"}); err != nil {
+	if _, err := client.CreateTheme(context.Background(), CreateThemeRequest{Name: "Brand"}); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if !strings.Contains(gotBody, `"name":"Brand"`) {
@@ -411,7 +412,7 @@ func TestCreateTheme_Error(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	_, err := client.CreateTheme(CreateThemeRequest{})
+	_, err := client.CreateTheme(context.Background(), CreateThemeRequest{})
 
 	var apiErr *APIError
 	if !errors.As(err, &apiErr) {
@@ -460,7 +461,7 @@ func TestUpdateTheme(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			result, err := client.UpdateTheme("thm_abc123", tt.req)
+			result, err := client.UpdateTheme(context.Background(), "thm_abc123", tt.req)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -495,7 +496,7 @@ func TestUpdateTheme_Error(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	_, err := client.UpdateTheme("thm_missing", UpdateThemeRequest{Name: "Renamed"})
+	_, err := client.UpdateTheme(context.Background(), "thm_missing", UpdateThemeRequest{Name: "Renamed"})
 
 	var apiErr *APIError
 	if !errors.As(err, &apiErr) {

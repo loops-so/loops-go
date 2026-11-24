@@ -1,6 +1,7 @@
 package loops
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -75,7 +76,7 @@ func TestGetEmailMessage(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			result, err := client.GetEmailMessage(tt.id)
+			result, err := client.GetEmailMessage(context.Background(), tt.id)
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -197,7 +198,7 @@ func TestUpdateEmailMessage(t *testing.T) {
 				EmailMessageFields: EmailMessageFields{Subject: "Updated"},
 				Set:                map[string]bool{"subject": true},
 			}
-			result, err := client.UpdateEmailMessage("em_abc123", req)
+			result, err := client.UpdateEmailMessage(context.Background(), "em_abc123", req)
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -303,7 +304,7 @@ func TestUpdateEmailMessage_RequestBody(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			if _, err := client.UpdateEmailMessage("em_abc123", tt.req); err != nil {
+			if _, err := client.UpdateEmailMessage(context.Background(), "em_abc123", tt.req); err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
@@ -347,7 +348,7 @@ func TestGetEmailMessage_NewFields(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	msg, err := client.GetEmailMessage("em_abc123")
+	msg, err := client.GetEmailMessage(context.Background(), "em_abc123")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -402,7 +403,7 @@ func TestUpdateEmailMessage_NewFields(t *testing.T) {
 			"contactPropertiesFallbacks": true,
 		},
 	}
-	if _, err := client.UpdateEmailMessage("em_abc123", req); err != nil {
+	if _, err := client.UpdateEmailMessage(context.Background(), "em_abc123", req); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -492,7 +493,7 @@ func TestPreviewEmailMessage(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			resp, err := client.PreviewEmailMessage("em_abc123", tt.req)
+			resp, err := client.PreviewEmailMessage(context.Background(), "em_abc123", tt.req)
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -599,7 +600,7 @@ func TestRenderEmailMessage(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			resp, err := client.RenderEmailMessage("em_abc123", tt.req)
+			resp, err := client.RenderEmailMessage(context.Background(), "em_abc123", tt.req)
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -699,7 +700,7 @@ func TestGetEmailMessageGuardian(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			result, err := client.GetEmailMessageGuardian(tt.id)
+			result, err := client.GetEmailMessageGuardian(context.Background(), tt.id)
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -768,7 +769,7 @@ func TestGetEmailMessage_FooterID(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			result, err := client.GetEmailMessage("em_abc123")
+			result, err := client.GetEmailMessage(context.Background(), "em_abc123")
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -826,7 +827,7 @@ func TestUpdateEmailMessage_FooterID(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			if _, err := client.UpdateEmailMessage("em_abc123", tt.req); err != nil {
+			if _, err := client.UpdateEmailMessage(context.Background(), "em_abc123", tt.req); err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
 

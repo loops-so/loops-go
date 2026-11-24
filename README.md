@@ -16,15 +16,17 @@ go get github.com/loops-so/loops-go
 package main
 
 import (
+    "context"
     "log"
 
     loops "github.com/loops-so/loops-go"
 )
 
 func main() {
+    ctx := context.Background()
     client := loops.NewClient("YOUR_API_KEY")
 
-    err := client.SendEvent(loops.SendEventRequest{
+    err := client.SendEvent(ctx, loops.SendEventRequest{
         Email:     "user@example.com",
         EventName: "signup",
         EventProperties: map[string]any{
@@ -79,7 +81,7 @@ Full reference: [pkg.go.dev/github.com/loops-so/loops-go](https://pkg.go.dev/git
 API errors are returned as `*loops.APIError` with `StatusCode` and `Message`:
 
 ```go
-if err := client.SendEvent(req); err != nil {
+if err := client.SendEvent(ctx, req); err != nil {
     var apiErr *loops.APIError
     if errors.As(err, &apiErr) {
         log.Printf("loops api error %d: %s", apiErr.StatusCode, apiErr.Message)
@@ -92,6 +94,19 @@ if err := client.SendEvent(req); err != nil {
 
 Requests are automatically retried with exponential backoff and jitter on `429` and `5xx` responses (up to 2 retries).
 
+## Cancellation and deadlines
+
+Every method that calls the API takes a `context.Context` as its first argument. Cancel the context or set a deadline to stop the call, including the wait between retries:
+
+```go
+ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+defer cancel()
+
+err := client.SendEvent(ctx, req)
+```
+
+The HTTP client timeout (5 seconds by default, see `WithHTTPClient`) applies to each attempt independently of the context.
+
 ## Idempotency
 
 `SendEvent` and `SendTransactional` accept an `IdempotencyKey` field, which is sent as the `Idempotency-Key` header.
@@ -101,7 +116,7 @@ Requests are automatically retried with exponential backoff and jitter on `429` 
 Paginated list methods return a single page of results and a `*Pagination` value. Most of them take a `PaginationParams` to control page size and cursor. `ListCampaigns`, `ListTransactionals`, and `ListWorkflows` take their own params type. Each type embeds `PaginationParams` and adds a group filter (`CampaignGroupID`, `TransactionalGroupID`, or `WorkflowGroupID`):
 
 ```go
-items, page, err := client.ListTransactionals(loops.ListTransactionalsParams{
+items, page, err := client.ListTransactionals(ctx, loops.ListTransactionalsParams{
     PaginationParams:     loops.PaginationParams{PerPage: "50"},
     TransactionalGroupID: "grp_123",
 })
@@ -115,7 +130,7 @@ To fetch every page, use the generic `Paginate` helper:
 
 ```go
 all, err := loops.Paginate(func(cursor string) ([]loops.Transactional, *loops.Pagination, error) {
-    return client.ListTransactionals(loops.ListTransactionalsParams{
+    return client.ListTransactionals(ctx, loops.ListTransactionalsParams{
         PaginationParams: loops.PaginationParams{Cursor: cursor},
     })
 })
@@ -128,9 +143,9 @@ all, err := loops.Paginate(func(cursor string) ([]loops.Transactional, *loops.Pa
 ```go
 rev := workflow.WorkflowRevisionID
 
-err := client.DeleteWorkflow(workflow.ID, loops.DeleteWorkflowRequest{ExpectedRevisionID: rev})
+err := client.DeleteWorkflow(ctx, workflow.ID, loops.DeleteWorkflowRequest{ExpectedRevisionID: rev})
 if errors.Is(err, loops.ErrWorkflowDeleteConfirmationRequired) {
-    err = client.DeleteWorkflow(workflow.ID, loops.DeleteWorkflowRequest{
+    err = client.DeleteWorkflow(ctx, workflow.ID, loops.DeleteWorkflowRequest{
         ExpectedRevisionID: rev,
         ConfirmDelete:      true,
     })
@@ -157,7 +172,7 @@ if err != nil {
     log.Fatal(err)
 }
 
-asset, err := client.Upload(loops.UploadRequest{
+asset, err := client.Upload(ctx, loops.UploadRequest{
     EmailMessageID: "em_abc123",
     ContentType:    "image/png",
     ContentLength:  stat.Size(),

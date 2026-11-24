@@ -1,6 +1,7 @@
 package loops
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -8,8 +9,8 @@ import (
 
 // GetDedicatedSendingIPs returns the dedicated sending IP addresses assigned
 // to the team. Returns an empty slice when no dedicated IPs are assigned.
-func (c *Client) GetDedicatedSendingIPs() ([]string, error) {
-	req, err := c.newRequest(http.MethodGet, "/dedicated-sending-ips", nil)
+func (c *Client) GetDedicatedSendingIPs(ctx context.Context) ([]string, error) {
+	req, err := c.newRequest(ctx, http.MethodGet, "/dedicated-sending-ips", nil)
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,7 @@
 package loops
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -50,7 +51,7 @@ func TestSendEvent(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			err := client.SendEvent(SendEventRequest{
+			err := client.SendEvent(context.Background(), SendEventRequest{
 				Email:     "test@example.com",
 				EventName: "signup",
 			})
@@ -177,7 +178,7 @@ func TestSendEvent_RequestBody(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			client.SendEvent(tt.req)
+			client.SendEvent(context.Background(), tt.req)
 
 			for key, want := range tt.wantPresent {
 				got, ok := body[key]
@@ -259,7 +260,7 @@ func TestSendEvent_IdempotencyKey(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			client.SendEvent(SendEventRequest{
+			client.SendEvent(context.Background(), SendEventRequest{
 				Email:          "a@b.com",
 				EventName:      "click",
 				IdempotencyKey: tt.idempotencyKey,

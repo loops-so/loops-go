@@ -2,6 +2,7 @@ package loops
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -19,8 +20,8 @@ type ContactProperty struct {
 // ListContactProperties returns the contact properties defined on your
 // account. If customOnly is true, only custom properties are returned;
 // otherwise built-in properties are included as well.
-func (c *Client) ListContactProperties(customOnly bool) ([]ContactProperty, error) {
-	req, err := c.newRequest(http.MethodGet, "/contacts/properties", nil)
+func (c *Client) ListContactProperties(ctx context.Context, customOnly bool) ([]ContactProperty, error) {
+	req, err := c.newRequest(ctx, http.MethodGet, "/contacts/properties", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -51,13 +52,13 @@ func (c *Client) ListContactProperties(customOnly bool) ([]ContactProperty, erro
 
 // CreateContactProperty creates a new custom contact property with the
 // given name and type (e.g. "string", "number", "boolean", "date").
-func (c *Client) CreateContactProperty(name, propType string) error {
+func (c *Client) CreateContactProperty(ctx context.Context, name, propType string) error {
 	b, err := json.Marshal(map[string]string{"name": name, "type": propType})
 	if err != nil {
 		return fmt.Errorf("failed to encode request: %w", err)
 	}
 
-	req, err := c.newRequest(http.MethodPost, "/contacts/properties", bytes.NewReader(b))
+	req, err := c.newRequest(ctx, http.MethodPost, "/contacts/properties", bytes.NewReader(b))
 	if err != nil {
 		return err
 	}

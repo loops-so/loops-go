@@ -9,7 +9,7 @@
 //
 //	client := loops.NewClient("YOUR_API_KEY")
 //
-//	err := client.SendEvent(loops.SendEventRequest{
+//	err := client.SendEvent(ctx, loops.SendEventRequest{
 //	    Email:     "user@example.com",
 //	    EventName: "signup",
 //	})
@@ -177,11 +177,11 @@ func (c *Client) Do(ctx context.Context, method, path string, body any) (*http.R
 		}
 		reader = bytes.NewReader(b)
 	}
-	req, err := c.newRequest(method, path, reader)
+	req, err := c.newRequest(ctx, method, path, reader)
 	if err != nil {
 		return nil, err
 	}
-	return c.do(req.WithContext(ctx))
+	return c.do(req)
 }
 
 func (c *Client) do(req *http.Request) (*http.Response, error) {
@@ -227,7 +227,7 @@ func (c *Client) do(req *http.Request) (*http.Response, error) {
 	return resp, nil
 }
 
-func (c *Client) newRequest(method, path string, body io.Reader) (*http.Request, error) {
+func (c *Client) newRequest(ctx context.Context, method, path string, body io.Reader) (*http.Request, error) {
 	url := fmt.Sprintf("%s%s", c.baseURL, path)
 
 	var bodyBytes []byte
@@ -240,7 +240,7 @@ func (c *Client) newRequest(method, path string, body io.Reader) (*http.Request,
 		body = bytes.NewReader(bodyBytes)
 	}
 
-	req, err := http.NewRequest(method, url, body)
+	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
 		return nil, err
 	}

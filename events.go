@@ -2,6 +2,7 @@ package loops
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -28,7 +29,7 @@ type SendEventRequest struct {
 // SendEvent sends an event to Loops, optionally updating contact properties
 // and mailing-list memberships at the same time. See [SendEventRequest] for
 // field semantics.
-func (c *Client) SendEvent(req SendEventRequest) error {
+func (c *Client) SendEvent(ctx context.Context, req SendEventRequest) error {
 	body := make(map[string]any)
 	for k, v := range req.ContactProperties {
 		body[k] = v
@@ -52,7 +53,7 @@ func (c *Client) SendEvent(req SendEventRequest) error {
 		return fmt.Errorf("failed to encode request: %w", err)
 	}
 
-	httpReq, err := c.newRequest(http.MethodPost, "/events/send", bytes.NewReader(b))
+	httpReq, err := c.newRequest(ctx, http.MethodPost, "/events/send", bytes.NewReader(b))
 	if err != nil {
 		return err
 	}

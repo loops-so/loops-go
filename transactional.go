@@ -2,6 +2,7 @@ package loops
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -44,13 +45,13 @@ type SendTransactionalRequest struct {
 
 // SendTransactional sends a transactional email. See
 // [SendTransactionalRequest] for field semantics.
-func (c *Client) SendTransactional(req SendTransactionalRequest) error {
+func (c *Client) SendTransactional(ctx context.Context, req SendTransactionalRequest) error {
 	b, err := json.Marshal(req)
 	if err != nil {
 		return fmt.Errorf("failed to encode request: %w", err)
 	}
 
-	httpReq, err := c.newRequest(http.MethodPost, "/transactional", bytes.NewReader(b))
+	httpReq, err := c.newRequest(ctx, http.MethodPost, "/transactional", bytes.NewReader(b))
 	if err != nil {
 		return err
 	}
@@ -76,13 +77,13 @@ func (c *Client) SendTransactional(req SendTransactionalRequest) error {
 // iterate every page, use [Paginate]:
 //
 //	all, err := loops.Paginate(func(cursor string) ([]loops.TransactionalEmail, *loops.Pagination, error) {
-//	    return client.ListTransactional(loops.PaginationParams{Cursor: cursor})
+//	    return client.ListTransactional(ctx, loops.PaginationParams{Cursor: cursor})
 //	})
 //
 // Deprecated: use [Client.ListTransactionals], which returns the richer
 // [Transactional] shape (draft and published email message IDs, separate
 // created/updated timestamps).
-func (c *Client) ListTransactional(params PaginationParams) ([]TransactionalEmail, *Pagination, error) {
+func (c *Client) ListTransactional(ctx context.Context, params PaginationParams) ([]TransactionalEmail, *Pagination, error) {
 	q := url.Values{}
 	if params.PerPage != "" {
 		q.Set("perPage", params.PerPage)
@@ -96,7 +97,7 @@ func (c *Client) ListTransactional(params PaginationParams) ([]TransactionalEmai
 		path += "?" + q.Encode()
 	}
 
-	req, err := c.newRequest(http.MethodGet, path, nil)
+	req, err := c.newRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, nil, err
 	}

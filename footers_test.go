@@ -1,6 +1,7 @@
 package loops
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -132,7 +133,7 @@ func TestListFooters(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			footers, page, err := client.ListFooters(tt.params)
+			footers, page, err := client.ListFooters(context.Background(), tt.params)
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -248,7 +249,7 @@ func TestCreateFooter(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			result, err := client.CreateFooter(CreateFooterRequest{Name: "Main footer"})
+			result, err := client.CreateFooter(context.Background(), CreateFooterRequest{Name: "Main footer"})
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -327,7 +328,7 @@ func TestCreateFooter_RequestBody(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			if _, err := client.CreateFooter(tt.req); err != nil {
+			if _, err := client.CreateFooter(context.Background(), tt.req); err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
@@ -398,7 +399,7 @@ func TestGetFooter(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			result, err := client.GetFooter(tt.id)
+			result, err := client.GetFooter(context.Background(), tt.id)
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -502,7 +503,7 @@ func TestUpdateFooter(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			result, err := client.UpdateFooter("ftr_1", UpdateFooterRequest{Name: "Main footer"})
+			result, err := client.UpdateFooter(context.Background(), "ftr_1", UpdateFooterRequest{Name: "Main footer"})
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -588,7 +589,7 @@ func TestUpdateFooter_RequestBody(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			if _, err := client.UpdateFooter("ftr_1", tt.req); err != nil {
+			if _, err := client.UpdateFooter(context.Background(), "ftr_1", tt.req); err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
@@ -643,7 +644,7 @@ func TestDeleteFooter(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			err := client.DeleteFooter("ftr_1")
+			err := client.DeleteFooter(context.Background(), "ftr_1")
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -720,7 +721,7 @@ func TestSetDefaultFooter(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			result, err := client.SetDefaultFooter("ftr_1", SetDefaultFooterRequest{ExistingEmails: FooterExistingEmailsPreviousDefault})
+			result, err := client.SetDefaultFooter(context.Background(), "ftr_1", SetDefaultFooterRequest{ExistingEmails: FooterExistingEmailsPreviousDefault})
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -820,7 +821,7 @@ func TestGetFooterVariant(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			result, err := client.GetFooterVariant("ftr_1", "var_1")
+			result, err := client.GetFooterVariant(context.Background(), "ftr_1", "var_1")
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -943,7 +944,7 @@ func TestUpdateFooterVariant(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			result, err := client.UpdateFooterVariant("ftr_1", "var_1", UpdateFooterVariantRequest{
+			result, err := client.UpdateFooterVariant(context.Background(), "ftr_1", "var_1", UpdateFooterVariantRequest{
 				ExpectedRevisionID: "rev_0",
 				LMX:                "<Paragraph>Draft</Paragraph>",
 			})
@@ -1045,7 +1046,7 @@ func TestPublishFooterVariant(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			result, err := client.PublishFooterVariant("ftr_1", "var_1", PublishFooterVariantRequest{ExpectedRevisionID: "rev_1"})
+			result, err := client.PublishFooterVariant(context.Background(), "ftr_1", "var_1", PublishFooterVariantRequest{ExpectedRevisionID: "rev_1"})
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError

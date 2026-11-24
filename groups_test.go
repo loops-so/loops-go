@@ -1,6 +1,7 @@
 package loops
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -60,39 +61,45 @@ func allGroupOps() []groupOps {
 		{
 			name:     "campaign",
 			basePath: "/campaign-groups",
-			create:   func(c *Client, req CreateGroupRequest) (*Group, error) { return c.CreateCampaignGroup(req) },
-			get:      func(c *Client, id string) (*Group, error) { return c.GetCampaignGroup(id) },
+			create: func(c *Client, req CreateGroupRequest) (*Group, error) {
+				return c.CreateCampaignGroup(context.Background(), req)
+			},
+			get: func(c *Client, id string) (*Group, error) { return c.GetCampaignGroup(context.Background(), id) },
 			update: func(c *Client, id string, req UpdateGroupRequest) (*Group, error) {
-				return c.UpdateCampaignGroup(id, req)
+				return c.UpdateCampaignGroup(context.Background(), id, req)
 			},
 			list: func(c *Client, params PaginationParams) ([]Group, *Pagination, error) {
-				return c.ListCampaignGroups(params)
+				return c.ListCampaignGroups(context.Background(), params)
 			},
 			createOK: http.StatusOK,
 		},
 		{
 			name:     "transactional",
 			basePath: "/transactional-groups",
-			create:   func(c *Client, req CreateGroupRequest) (*Group, error) { return c.CreateTransactionalGroup(req) },
-			get:      func(c *Client, id string) (*Group, error) { return c.GetTransactionalGroup(id) },
+			create: func(c *Client, req CreateGroupRequest) (*Group, error) {
+				return c.CreateTransactionalGroup(context.Background(), req)
+			},
+			get: func(c *Client, id string) (*Group, error) { return c.GetTransactionalGroup(context.Background(), id) },
 			update: func(c *Client, id string, req UpdateGroupRequest) (*Group, error) {
-				return c.UpdateTransactionalGroup(id, req)
+				return c.UpdateTransactionalGroup(context.Background(), id, req)
 			},
 			list: func(c *Client, params PaginationParams) ([]Group, *Pagination, error) {
-				return c.ListTransactionalGroups(params)
+				return c.ListTransactionalGroups(context.Background(), params)
 			},
 			createOK: http.StatusOK,
 		},
 		{
 			name:     "workflow",
 			basePath: "/workflow-groups",
-			create:   func(c *Client, req CreateGroupRequest) (*Group, error) { return c.CreateWorkflowGroup(req) },
-			get:      func(c *Client, id string) (*Group, error) { return c.GetWorkflowGroup(id) },
+			create: func(c *Client, req CreateGroupRequest) (*Group, error) {
+				return c.CreateWorkflowGroup(context.Background(), req)
+			},
+			get: func(c *Client, id string) (*Group, error) { return c.GetWorkflowGroup(context.Background(), id) },
 			update: func(c *Client, id string, req UpdateGroupRequest) (*Group, error) {
-				return c.UpdateWorkflowGroup(id, req)
+				return c.UpdateWorkflowGroup(context.Background(), id, req)
 			},
 			list: func(c *Client, params PaginationParams) ([]Group, *Pagination, error) {
-				return c.ListWorkflowGroups(params)
+				return c.ListWorkflowGroups(context.Background(), params)
 			},
 			createOK: http.StatusOK,
 		},
@@ -240,7 +247,7 @@ func TestGroups_ListQueryParams(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	if _, _, err := client.ListCampaignGroups(PaginationParams{PerPage: "10", Cursor: "xyz"}); err != nil {
+	if _, _, err := client.ListCampaignGroups(context.Background(), PaginationParams{PerPage: "10", Cursor: "xyz"}); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if gotPerPage != "10" || gotCursor != "xyz" {

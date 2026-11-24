@@ -1,6 +1,7 @@
 package loops
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -16,8 +17,8 @@ type MailingList struct {
 }
 
 // ListMailingLists returns every mailing list defined on your account.
-func (c *Client) ListMailingLists() ([]MailingList, error) {
-	req, err := c.newRequest(http.MethodGet, "/lists", nil)
+func (c *Client) ListMailingLists(ctx context.Context) ([]MailingList, error) {
+	req, err := c.newRequest(ctx, http.MethodGet, "/lists", nil)
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,7 @@
 package loops
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -69,7 +70,7 @@ func TestListContactProperties(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			props, err := client.ListContactProperties(tt.customOnly)
+			props, err := client.ListContactProperties(context.Background(), tt.customOnly)
 
 			if tt.wantQuery != "" && gotQuery != tt.wantQuery {
 				t.Errorf("query = %q, want %q", gotQuery, tt.wantQuery)
@@ -148,7 +149,7 @@ func TestCreateContactProperty(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			err := client.CreateContactProperty("age", "number")
+			err := client.CreateContactProperty(context.Background(), "age", "number")
 
 			if tt.wantBody != nil {
 				for k, v := range tt.wantBody {
@@ -187,7 +188,7 @@ func TestListContactProperties_ResponseData(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	props, err := client.ListContactProperties(false)
+	props, err := client.ListContactProperties(context.Background(), false)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

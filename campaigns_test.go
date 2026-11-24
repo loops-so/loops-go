@@ -1,6 +1,7 @@
 package loops
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -91,7 +92,7 @@ func TestCreateCampaign(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			resp, err := client.CreateCampaign(CreateCampaignRequest{Name: "Spring Launch"})
+			resp, err := client.CreateCampaign(context.Background(), CreateCampaignRequest{Name: "Spring Launch"})
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -147,7 +148,7 @@ func TestCreateCampaign_RequestBody(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	if _, err := client.CreateCampaign(CreateCampaignRequest{Name: "Spring"}); err != nil {
+	if _, err := client.CreateCampaign(context.Background(), CreateCampaignRequest{Name: "Spring"}); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -211,7 +212,7 @@ func TestUpdateCampaign(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			result, err := client.UpdateCampaign("cmp_abc123", UpdateCampaignRequest{
+			result, err := client.UpdateCampaign(context.Background(), "cmp_abc123", UpdateCampaignRequest{
 				Name: "Renamed",
 				Set:  map[string]bool{"name": true},
 			})
@@ -274,7 +275,7 @@ func TestUpdateCampaign_RequestBodyAndPath(t *testing.T) {
 		Name: "Renamed",
 		Set:  map[string]bool{"name": true},
 	}
-	if _, err := client.UpdateCampaign("cmp_abc123", req); err != nil {
+	if _, err := client.UpdateCampaign(context.Background(), "cmp_abc123", req); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -351,7 +352,7 @@ func TestGetCampaign(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			result, err := client.GetCampaign(tt.id)
+			result, err := client.GetCampaign(context.Background(), tt.id)
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -446,7 +447,7 @@ func TestListCampaigns(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			campaigns, pagination, err := client.ListCampaigns(ListCampaignsParams{})
+			campaigns, pagination, err := client.ListCampaigns(context.Background(), ListCampaignsParams{})
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError
@@ -493,7 +494,7 @@ func TestListCampaigns_ResponseData(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	campaigns, _, err := client.ListCampaigns(ListCampaignsParams{})
+	campaigns, _, err := client.ListCampaigns(context.Background(), ListCampaignsParams{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -556,7 +557,7 @@ func TestListCampaigns_QueryParams(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			client.ListCampaigns(tt.params)
+			client.ListCampaigns(context.Background(), tt.params)
 
 			if gotPath != "/campaigns" {
 				t.Errorf("path = %q, want /campaigns", gotPath)
@@ -598,7 +599,7 @@ func TestGetCampaign_WithGroupAndScheduling(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	result, err := client.GetCampaign("cmp_abc123")
+	result, err := client.GetCampaign(context.Background(), "cmp_abc123")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -640,7 +641,7 @@ func TestCreateCampaign_AllFields(t *testing.T) {
 			Timestamp: "2026-06-01T09:00:00Z",
 		},
 	}
-	if _, err := client.CreateCampaign(req); err != nil {
+	if _, err := client.CreateCampaign(context.Background(), req); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -685,7 +686,7 @@ func TestUpdateCampaign_NullableFields(t *testing.T) {
 	segment := "seg_pro"
 	req.AudienceSegmentID = &segment
 
-	if _, err := client.UpdateCampaign("cmp_abc123", req); err != nil {
+	if _, err := client.UpdateCampaign(context.Background(), "cmp_abc123", req); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if _, ok := body["mailingListId"]; !ok {
@@ -762,7 +763,7 @@ func TestGetCampaignMetrics(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			result, err := client.GetCampaignMetrics(tt.id)
+			result, err := client.GetCampaignMetrics(context.Background(), tt.id)
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError

@@ -1,6 +1,7 @@
 package loops
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -46,7 +47,7 @@ func TestGetDedicatedSendingIPs(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient("test-key", WithBaseURL(server.URL))
-			ips, err := client.GetDedicatedSendingIPs()
+			ips, err := client.GetDedicatedSendingIPs(context.Background())
 
 			if tt.wantAPIErr != nil {
 				var apiErr *APIError

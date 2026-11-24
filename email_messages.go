@@ -2,6 +2,7 @@ package loops
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -129,8 +130,8 @@ type EmailMessageGuardianResponse struct {
 }
 
 // GetEmailMessage returns the email message identified by id.
-func (c *Client) GetEmailMessage(id string) (*EmailMessage, error) {
-	req, err := c.newRequest(http.MethodGet, "/email-messages/"+id, nil)
+func (c *Client) GetEmailMessage(ctx context.Context, id string) (*EmailMessage, error) {
+	req, err := c.newRequest(ctx, http.MethodGet, "/email-messages/"+id, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -160,7 +161,7 @@ func (c *Client) GetEmailMessage(id string) (*EmailMessage, error) {
 // is the published email message of a transactional email, when the parent
 // workflow is sending, or when FooterID is not a published footer of the
 // team.
-func (c *Client) UpdateEmailMessage(id string, req UpdateEmailMessageRequest) (*EmailMessage, error) {
+func (c *Client) UpdateEmailMessage(ctx context.Context, id string, req UpdateEmailMessageRequest) (*EmailMessage, error) {
 	body := map[string]any{}
 	if req.Set["subject"] {
 		body["subject"] = req.Subject
@@ -213,7 +214,7 @@ func (c *Client) UpdateEmailMessage(id string, req UpdateEmailMessageRequest) (*
 		return nil, fmt.Errorf("failed to encode request: %w", err)
 	}
 
-	httpReq, err := c.newRequest(http.MethodPost, "/email-messages/"+id, bytes.NewReader(b))
+	httpReq, err := c.newRequest(ctx, http.MethodPost, "/email-messages/"+id, bytes.NewReader(b))
 	if err != nil {
 		return nil, err
 	}
@@ -239,13 +240,13 @@ func (c *Client) UpdateEmailMessage(id string, req UpdateEmailMessageRequest) (*
 // PreviewEmailMessage sends a test preview of the email message identified
 // by id to the addresses in req.Emails. See [EmailMessagePreviewRequest]
 // for the allowed variable fields by parent type.
-func (c *Client) PreviewEmailMessage(id string, req EmailMessagePreviewRequest) (*EmailMessagePreviewResponse, error) {
+func (c *Client) PreviewEmailMessage(ctx context.Context, id string, req EmailMessagePreviewRequest) (*EmailMessagePreviewResponse, error) {
 	b, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode request: %w", err)
 	}
 
-	httpReq, err := c.newRequest(http.MethodPost, "/email-messages/"+id+"/preview", bytes.NewReader(b))
+	httpReq, err := c.newRequest(ctx, http.MethodPost, "/email-messages/"+id+"/preview", bytes.NewReader(b))
 	if err != nil {
 		return nil, err
 	}
@@ -271,13 +272,13 @@ func (c *Client) PreviewEmailMessage(id string, req EmailMessagePreviewRequest) 
 // RenderEmailMessage renders the HTML of the email message identified by id
 // without sending it. See [EmailMessageRenderRequest] for the allowed
 // variable fields by parent type.
-func (c *Client) RenderEmailMessage(id string, req EmailMessageRenderRequest) (*EmailMessageRenderResponse, error) {
+func (c *Client) RenderEmailMessage(ctx context.Context, id string, req EmailMessageRenderRequest) (*EmailMessageRenderResponse, error) {
 	b, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode request: %w", err)
 	}
 
-	httpReq, err := c.newRequest(http.MethodPost, "/email-messages/"+id+"/render", bytes.NewReader(b))
+	httpReq, err := c.newRequest(ctx, http.MethodPost, "/email-messages/"+id+"/render", bytes.NewReader(b))
 	if err != nil {
 		return nil, err
 	}
@@ -302,8 +303,8 @@ func (c *Client) RenderEmailMessage(id string, req EmailMessageRenderRequest) (*
 
 // GetEmailMessageGuardian runs Guardian content validation on the email
 // message identified by id and returns any errors and warnings.
-func (c *Client) GetEmailMessageGuardian(id string) (*EmailMessageGuardianResponse, error) {
-	req, err := c.newRequest(http.MethodGet, "/email-messages/"+id+"/guardian", nil)
+func (c *Client) GetEmailMessageGuardian(ctx context.Context, id string) (*EmailMessageGuardianResponse, error) {
+	req, err := c.newRequest(ctx, http.MethodGet, "/email-messages/"+id+"/guardian", nil)
 	if err != nil {
 		return nil, err
 	}
