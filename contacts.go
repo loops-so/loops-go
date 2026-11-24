@@ -227,16 +227,23 @@ func (c *Client) UpdateContact(ctx context.Context, req UpdateContactRequest) er
 	return nil
 }
 
-// DeleteContact deletes a contact identified by email or user ID. Set exactly
-// one of the two. Only the non-empty identifier is sent; the API rejects a
-// request that provides both or neither.
-func (c *Client) DeleteContact(ctx context.Context, email, userID string) error {
+// DeleteContactRequest is the payload for [Client.DeleteContact]. Set exactly
+// one of Email or UserID to identify the contact.
+type DeleteContactRequest struct {
+	Email  string
+	UserID string
+}
+
+// DeleteContact deletes a contact identified by email or user ID. Only the
+// non-empty identifier is sent; the API rejects a request that provides both
+// or neither.
+func (c *Client) DeleteContact(ctx context.Context, req DeleteContactRequest) error {
 	body := make(map[string]any)
-	if email != "" {
-		body["email"] = email
+	if req.Email != "" {
+		body["email"] = req.Email
 	}
-	if userID != "" {
-		body["userId"] = userID
+	if req.UserID != "" {
+		body["userId"] = req.UserID
 	}
 
 	b, err := json.Marshal(body)
@@ -289,20 +296,28 @@ type ContactSuppressionRemoval struct {
 	} `json:"removalQuota"`
 }
 
+// ContactSuppressionParams is the query for [Client.CheckContactSuppression]
+// and [Client.RemoveContactSuppression]. Set exactly one of Email or UserID
+// to identify the contact.
+type ContactSuppressionParams struct {
+	Email  string
+	UserID string
+}
+
 // CheckContactSuppression reports whether the contact identified by email or
 // user ID is currently suppressed.
-func (c *Client) CheckContactSuppression(ctx context.Context, email, userID string) (*ContactSuppression, error) {
+func (c *Client) CheckContactSuppression(ctx context.Context, params ContactSuppressionParams) (*ContactSuppression, error) {
 	req, err := c.newRequest(ctx, http.MethodGet, "/contacts/suppression", nil)
 	if err != nil {
 		return nil, err
 	}
 
 	q := req.URL.Query()
-	if email != "" {
-		q.Set("email", email)
+	if params.Email != "" {
+		q.Set("email", params.Email)
 	}
-	if userID != "" {
-		q.Set("userId", userID)
+	if params.UserID != "" {
+		q.Set("userId", params.UserID)
 	}
 	req.URL.RawQuery = q.Encode()
 
@@ -327,18 +342,18 @@ func (c *Client) CheckContactSuppression(ctx context.Context, email, userID stri
 // RemoveContactSuppression removes a contact from the suppression list,
 // allowing future sends to them. Removals count against a monthly quota
 // reported in the response.
-func (c *Client) RemoveContactSuppression(ctx context.Context, email, userID string) (*ContactSuppressionRemoval, error) {
+func (c *Client) RemoveContactSuppression(ctx context.Context, params ContactSuppressionParams) (*ContactSuppressionRemoval, error) {
 	req, err := c.newRequest(ctx, http.MethodDelete, "/contacts/suppression", nil)
 	if err != nil {
 		return nil, err
 	}
 
 	q := req.URL.Query()
-	if email != "" {
-		q.Set("email", email)
+	if params.Email != "" {
+		q.Set("email", params.Email)
 	}
-	if userID != "" {
-		q.Set("userId", userID)
+	if params.UserID != "" {
+		q.Set("userId", params.UserID)
 	}
 	req.URL.RawQuery = q.Encode()
 
