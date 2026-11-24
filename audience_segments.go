@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 )
 
 // AudienceSegment is a saved audience filter. The Filter is null for the
@@ -260,8 +261,8 @@ func (c *Client) CreateAudienceSegment(ctx context.Context, req CreateAudienceSe
 // pagination information. To iterate every page, use [Paginate].
 func (c *Client) ListAudienceSegments(ctx context.Context, params PaginationParams) ([]AudienceSegment, *Pagination, error) {
 	q := url.Values{}
-	if params.PerPage != "" {
-		q.Set("perPage", params.PerPage)
+	if params.PerPage != 0 {
+		q.Set("perPage", strconv.Itoa(params.PerPage))
 	}
 	if params.Cursor != "" {
 		q.Set("cursor", params.Cursor)

@@ -118,7 +118,7 @@ func TestListWorkflows_QueryParams(t *testing.T) {
 		{
 			name: "all params",
 			params: ListWorkflowsParams{
-				PaginationParams: PaginationParams{PerPage: "25", Cursor: "abc"},
+				PaginationParams: PaginationParams{PerPage: 25, Cursor: "abc"},
 				WorkflowGroupID:  "grp_1",
 			},
 			wantPerPage: "25",

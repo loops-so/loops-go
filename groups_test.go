@@ -247,7 +247,7 @@ func TestGroups_ListQueryParams(t *testing.T) {
 	defer server.Close()
 
 	client := NewClient("test-key", WithBaseURL(server.URL))
-	if _, _, err := client.ListCampaignGroups(context.Background(), PaginationParams{PerPage: "10", Cursor: "xyz"}); err != nil {
+	if _, _, err := client.ListCampaignGroups(context.Background(), PaginationParams{PerPage: 10, Cursor: "xyz"}); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if gotPerPage != "10" || gotCursor != "xyz" {

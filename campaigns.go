@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 )
 
 // CampaignSchedulingMethodNow means the campaign sends immediately when
@@ -254,8 +255,8 @@ type ListCampaignsParams struct {
 // information. To iterate every page, use [Paginate].
 func (c *Client) ListCampaigns(ctx context.Context, params ListCampaignsParams) ([]Campaign, *Pagination, error) {
 	q := url.Values{}
-	if params.PerPage != "" {
-		q.Set("perPage", params.PerPage)
+	if params.PerPage != 0 {
+		q.Set("perPage", strconv.Itoa(params.PerPage))
 	}
 	if params.Cursor != "" {
 		q.Set("cursor", params.Cursor)

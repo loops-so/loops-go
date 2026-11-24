@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 )
 
 // FooterPlacementInside renders the footer inside the email body.
@@ -104,8 +105,8 @@ type PublishFooterVariantRequest struct {
 // along with pagination information. To iterate every page, use [Paginate].
 func (c *Client) ListFooters(ctx context.Context, params PaginationParams) ([]Footer, *Pagination, error) {
 	q := url.Values{}
-	if params.PerPage != "" {
-		q.Set("perPage", params.PerPage)
+	if params.PerPage != 0 {
+		q.Set("perPage", strconv.Itoa(params.PerPage))
 	}
 	if params.Cursor != "" {
 		q.Set("cursor", params.Cursor)

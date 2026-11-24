@@ -100,14 +100,14 @@ func TestListFooters(t *testing.T) {
 		},
 		{
 			name:       "with pagination params",
-			params:     PaginationParams{PerPage: "20", Cursor: "cur_1"},
+			params:     PaginationParams{PerPage: 20, Cursor: "cur_1"},
 			statusCode: http.StatusOK,
 			body:       listFootersResponse,
 			wantQuery:  "cursor=cur_1&perPage=20",
 		},
 		{
 			name:       "invalid perPage",
-			params:     PaginationParams{PerPage: "5"},
+			params:     PaginationParams{PerPage: 5},
 			statusCode: http.StatusBadRequest,
 			body:       `{"message":"perPage must be between 10 and 50."}`,
 			wantAPIErr: &APIError{StatusCode: http.StatusBadRequest, Message: "perPage must be between 10 and 50."},

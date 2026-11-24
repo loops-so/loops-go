@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 )
 
 // Transactional describes a transactional email template managed via the
@@ -205,8 +206,8 @@ type ListTransactionalsParams struct {
 // with pagination information. To iterate every page, use [Paginate].
 func (c *Client) ListTransactionals(ctx context.Context, params ListTransactionalsParams) ([]Transactional, *Pagination, error) {
 	q := url.Values{}
-	if params.PerPage != "" {
-		q.Set("perPage", params.PerPage)
+	if params.PerPage != 0 {
+		q.Set("perPage", strconv.Itoa(params.PerPage))
 	}
 	if params.Cursor != "" {
 		q.Set("cursor", params.Cursor)

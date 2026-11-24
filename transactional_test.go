@@ -168,7 +168,7 @@ func TestListTransactional_QueryParams(t *testing.T) {
 		},
 		{
 			name:        "per-page only",
-			params:      PaginationParams{PerPage: "50"},
+			params:      PaginationParams{PerPage: 50},
 			wantPerPage: "50",
 		},
 		{
@@ -178,7 +178,7 @@ func TestListTransactional_QueryParams(t *testing.T) {
 		},
 		{
 			name:        "both params",
-			params:      PaginationParams{PerPage: "10", Cursor: "xyz"},
+			params:      PaginationParams{PerPage: 10, Cursor: "xyz"},
 			wantPerPage: "10",
 			wantCursor:  "xyz",
 		},
